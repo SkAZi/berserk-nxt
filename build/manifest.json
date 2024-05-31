@@ -1,0 +1,15 @@
+{
+  "name": "ККИ Берсерк Nxt",
+  "short_name": "Берсерк",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#2a3140",
+  "theme_color": "#7540bf",
+  "icons": [
+    {
+      "src": "assets/icon.png",
+      "sizes": "512x512",
+      "type": "image/png"
+    }
+  ]
+}

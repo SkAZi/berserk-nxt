@@ -1,0 +1,70 @@
+appId: com.berserk.nxt
+productName: ККИ Берсерк Nxt
+electronLanguages:
+  - en-US
+  - ru
+directories:
+  buildResources: build
+files:
+  - '!scripts/**'
+  - '!**/.vscode/*'
+  - '!src/*'
+  - '!psd/*'
+  - '!certs/*'
+  - '!out_web/**'
+  - '!src/renderer/cards/**'
+  - '!node_modules@*/**'
+  - '!electron.vite.config.{js,ts,mjs,cjs}'
+  - '!{.eslintignore,.eslintrc.cjs,.prettierignore,.prettierrc.yaml,dev-app-update.yml,CHANGELOG.md,README.md}'
+  - '!{.env,.env.*,.npmrc,pnpm-lock.yaml,.fleet}'
+  - '!{tsconfig.json,tsconfig.node.json,tsconfig.web.json}'
+asarUnpack:
+  - resources/**
+extraResources:
+  - from: "src/renderer/cards"
+    to: "app.asar.unpacked/resources/cards"
+win:
+  publisherName: "Igor SkAZi Potapov"
+  executableName: berserk-nxt
+  icon: ./build/icon.ico
+  artifactName: berserk-nxt-win-${version}-${arch}.${ext}
+  target: ['nsis']
+nsis:
+  artifactName: berserk-nxt-win-${version}-${arch}.${ext}
+  shortcutName: ${productName}
+  uninstallDisplayName: ${productName}
+  oneClick: false
+  allowToChangeInstallationDirectory: true
+  createDesktopShortcut: true
+  createStartMenuShortcut: true
+mac:
+  entitlementsInherit: build/entitlements.mac.plist
+  icon: ./build/icon.icns
+  extendInfo:
+    - NSCameraUsageDescription: Application requests access to the device's camera.
+    - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
+    - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
+    - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  notarize: true
+  artifactName: berserk-nxt-mac-${version}-${arch}.${ext}
+  target: ['dmg', 'zip']
+dmg:
+  artifactName: berserk-nxt-mac-${version}-${arch}.${ext}
+  sign: false
+linux:
+  target: ['AppImage']
+  maintainer: berserk-nxt.ru
+  category: Game
+  icon: ./build/icon512.png
+  desktop:
+    Encoding: UTF-8
+appImage:
+  artifactName: berserk-nxt-lin-${version}-${arch}.${ext}
+snap:
+  artifactName: berserk-nxt-lin-${version}-${arch}.${ext}
+deb:
+  artifactName: berserk-nxt-lin-${version}-${arch}.${ext}
+npmRebuild: false
+publish:
+  provider: generic
+  url: https://updates.berserk-nxt.ru/

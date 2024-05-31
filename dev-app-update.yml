@@ -1,0 +1,3 @@
+provider: generic
+url: https://updates.berserk-nxt.ru/test/
+updaterCacheDirName: bersency-next-updater

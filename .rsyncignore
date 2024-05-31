@@ -1,0 +1,9 @@
+**/.DS_Store
+**/.cache
+**/.icon-set
+**/mac
+**/mac-arm64
+**/mac-x64
+**/win-unpacked
+**/linux-unpacked
+**/latest-linux.yml
