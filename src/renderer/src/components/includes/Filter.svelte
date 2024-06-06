@@ -120,6 +120,8 @@
             && ($options.costs.length == 0 || $options.costs.includes(card.cost.toString()))
             && ($options.classes.length == 0 || $options.classes.some((x) => card.class.includes(x) ))
             && ($options.icons.length == 0 || $options.icons.some((slug) => {
+              if (slug === "uniq") return card.uniq;
+              if (slug === "nuniq") return !card.uniq;
               let [x, n] = slug.split("=")
               return x in card.icons && (n === undefined || card.icons[x].toString() === n)
             }))
