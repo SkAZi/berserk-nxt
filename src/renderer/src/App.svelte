@@ -42,7 +42,8 @@
 
   function cloneDeck(index){
     user_decks.update(($user_decks) => {
-      const cloned = {...$user_decks['decks'][index], "id": v4()}
+      const cloned = JSON.parse(JSON.stringify($user_decks['decks'][index]))
+      cloned["id"] = v4()
       cloned["name"] = cloned["name"].replace(/( *v(\d+))?$/, (_a, _b, x) => ` v${parseInt(x || "0") + 1}`)
       return {...$user_decks, decks: [cloned, ...$user_decks['decks']]};
     });
@@ -120,7 +121,7 @@
         <li><a use:shortcuts on:action:primary={() => { cloneDeck(deck_id) }}>Дублировать колоду</a></li>
         <li><hr /></li>
         <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'brs'); }}>Сохранить колоду</a></li>
-        <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'proberserk'); }}>Экспорт в ProBerserk</a></li>
+        <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'proberserk'); }}>Экспорт в TXT (ProBerserk)</a></li>
         <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', byId($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'tts'); }}>Экспорт в TTS</a></li>
         <li><a use:shortcuts on:action:primary={() => { takeScreenshot('#deck-view', $user_decks['decks'][deck_id].name, groupCards($user_decks['decks'][deck_id].cards, 'asis')); }}>Декшот JPEG</a></li>
         <li><hr /></li>
