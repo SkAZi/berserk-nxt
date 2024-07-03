@@ -13,15 +13,23 @@ def create_tilesets(folder_path):
     # Вычисляем размер финального изображения
     image_width, image_height = cols * tile_width, rows * tile_height
 
-    for i in range(0, len(files), 69):
-        batch = files[i:i+69]
+    # Определяем общее количество страниц
+    total_pages = 219 // 69
 
+    for page_num in range(total_pages):
         # Создаем новое изображение с чёрным фоном
         result_image = Image.new('RGB', (image_width, image_height), (0, 0, 0))
-        
-        for idx, file in enumerate(batch):
-            img = Image.open(os.path.join(folder_path, file))
-            #img = img.resize((tile_width, tile_height))
+
+        for idx in range(69):
+            pos = page_num * 69 + idx + 1  # Позиция в общем списке (1-based index)
+            file_name = f'{pos}.jpg'
+            file_path = os.path.join(folder_path, file_name)
+
+            if os.path.exists(file_path):
+                img = Image.open(file_path)
+            else:
+                # Создаем пустое изображение, если файла нет
+                img = Image.new('RGB', (tile_width, tile_height), (0, 0, 0))
 
             # Вычисляем позицию каждого тайла
             x_offset = (idx % cols) * tile_width
@@ -31,8 +39,8 @@ def create_tilesets(folder_path):
 
         # Сохраняем результат
         folder_name = os.path.basename(folder_path)
-        result_image.save(f'{folder_name}-{i//69+1}.jpg', quality=95)
+        result_image.save(f'{folder_name}-{page_num+1}.jpg', quality=95)
 
 # Путь к папке с картинками
-for folder_path in ['out_web/assets/cards/21','out_web/assets/cards/22']:
+for folder_path in ['../src/renderer/cards/40']:
     create_tilesets(folder_path)

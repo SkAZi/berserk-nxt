@@ -403,7 +403,7 @@
               >
                 {#if index}<option value=""></option>{/if}
                 {#each Object.entries(sets) as [key, set_name]}
-                  {#if parseInt(key) % 10 == 0}
+                  {#if parseInt(key) % 10 == 0 && parseInt(key) < 40}
                     <option value={key}>{set_name}</option>
                   {/if}
                 {/each}
