@@ -7,7 +7,7 @@
   // @ts-ignore
   const resoucesPath = window.api.resoucesPath
 
-  export let card = null
+  export let card = {}
   export let onpreview = (_e, _card, _alt) => {}
   export let onprimary = (_e, _card, _alt) => {}
   export let onplus = (_e, _card, _alt) => {}
