@@ -10,6 +10,7 @@ export const default_collection_options = {
   showPrice: false,
   onlyWithCost: false,
   featuredOnly: false,
+  filterNot: false,
   proMode: false,
   details_rarities: false,
   details_colors: false,

@@ -74,7 +74,7 @@
   function resetFilters(_event){
     let setsOptions = Object.keys(sets)
     if(options_name === 'deckbuilding_options')
-      setsOptions = setsOptions.filter(x => x !== '22')
+      setsOptions = setsOptions.filter(x => x !== '22' && x !== '40')
     options.set({...default_settings[options_name],
       cardSize: $options.cardSize,
       dimAbsent: $options.dimAbsent,
@@ -94,20 +94,21 @@
         return card
       })
       .filter(card => {
-        return ($options.searchQuery === ''
+        const filter_base_result = ($options.searchQuery === ''
               || card.number.toString() === $options.searchQuery?.toLowerCase()
               || card.tokens.includes(tokens.join(' '))
             )
-            && (!$options.featuredOnly || $featured[""].includes(card.id))
+            && (!$options.featuredOnly || $featured[''].includes(card.id))
             && (!$options.onlyWithCost || card.user_price > 0)
             && ((!$options.showSelected || card.user_count > 0) || ($options.onlyBase && card.user_total_count > 0))
-            && (!$options.onlyBase || card.alt == "" || card.altto === null)
+            && (!$options.onlyBase || card.alt == '' || card.altto === null)
             && (
               ($options.onlyBase && ($options.collection_counts.length == 0 || $options.collection_counts.includes(Math.min(5, card.user_total_count).toString()))) ||
               (!$options.onlyBase && ($options.collection_counts.length == 0 || $options.collection_counts.includes(Math.min(5, card.user_count).toString())))
             )
-            && ($options.eliteness.length == 0 || $options.eliteness.includes(card.elite ? '1' : '0'))
             && ($options.sets.length == 0 || $options.sets.includes(card.set_id.toString()))
+
+        const filter_result = ($options.eliteness.length == 0 || $options.eliteness.includes(card.elite ? '1' : '0'))
             && ($options.rarities.length == 0 || $options.rarities.includes(card.rarity.toString()))
             && ($options.colors.length == 0 || $options.colors.includes(card.color.toString()))
             && ($options.creature_types.length == 0 || $options.creature_types.includes(card.type.toString()))
@@ -120,11 +121,13 @@
             && ($options.costs.length == 0 || $options.costs.includes(card.cost.toString()))
             && ($options.classes.length == 0 || $options.classes.some((x) => card.class.includes(x) ))
             && ($options.icons.length == 0 || $options.icons.some((slug) => {
-              if (slug === "uniq") return card.uniq;
-              if (slug === "nuniq") return !card.uniq;
+              if (slug === 'uniq') return card.uniq;
+              if (slug === 'nuniq') return !card.uniq;
               let [x, n] = slug.split("=")
               return x in card.icons && (n === undefined || card.icons[x].toString() === n)
             }))
+
+        return filter_base_result && ($options.filterNot ? !filter_result : filter_result)
       })
       .sort((a, b) => {
         switch ($options.sortOrder) {
@@ -308,6 +311,7 @@
          <label><input type="checkbox" bind:checked={$options.dimAbsent} tabindex="0" /> Гасить лишнее</label>
          <label><input type="checkbox" bind:checked={$options.showCount} tabindex="0" /> Количество</label>
          <label><input type="checkbox" bind:checked={$options.showPrice} tabindex="0" /> Цена</label>
+         <label><input type="checkbox" bind:checked={$options.filterNot} tabindex="0" /> Обратный фильтр</label>
          <label style="padding-top: 10px;">
             Размер:
             <input type="range" min="80" max="300" step="10" bind:value={$options.cardSize} tabindex="0" />

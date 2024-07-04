@@ -117,7 +117,7 @@ export function readTTS(card_data, input) {
 }
 
 export function writeTTS(deck, options) {
-  const {path, sets, rarity, color, root_base, custom_view, deck_base, card_base} = options;
+  const {path, suffix, sets, rarity, color, root_base, custom_view, deck_base, card_base} = options;
 
   function GUID() {
     return Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
@@ -133,7 +133,8 @@ export function writeTTS(deck, options) {
   }
 
   function getURL(card, path){
-    return `${path}${card.set_id}-${1+Math.floor((card.number-1) / 69)}.jpg`
+    const release_suffix = suffix[`${card.set_id}`] || ''
+    return `${path}${card.set_id}-${1+Math.floor((card.number-1) / 69)}${release_suffix}.jpg`
   }
 
   const ret = fastCopy(root_base);
