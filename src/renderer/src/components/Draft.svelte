@@ -357,13 +357,14 @@
                 <option value="siled">Силед</option>
               </select>
               <select bind:value={$draft.show_score} class="driver-train-mode">
-                <option value="1">Тренировка с ботами</option>
-                <option value="">Турнир с ботами</option>
+                <option value="1">Обучение с ботами</option>
+                <option value="">Тренировка с ботами</option>
+                <option value="2">Турнир с ботами</option>
                 <!-- option value="2">Он-лайн турнир</!option -->
               </select>
             </div>
           </label>
-          {#if $draft.variant == 'draft' && $draft.show_score !== '2'}
+          {#if $draft.variant == 'draft'}
             <label>
               Укажи число игроков, {$draft.players - 1} мест{#if $draft.players == 2}о{:else if $draft.players <= 5}а{/if}
               {#if $draft.players == 2}займёт бездушный робот{:else}займут бездушные роботы{/if}:
@@ -675,7 +676,7 @@
         {#each byId($draft.own_cards) as card, index (index)}
           <div use:sortable={{ store: draft, key: 'own_cards' }}>
             <Card
-              {card}
+              card={($draft.step === 4 && $draft.show_score === '2') ? {number: "../back", alt: ""} : card}
               onpreview={togglePopup}
               onprimary={() => deckCardClick(index)}
               showCount={false}

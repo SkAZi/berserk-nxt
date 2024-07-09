@@ -12,7 +12,7 @@ export const classes = Array.from(new Set(cardsStore.flatMap(card => card.class 
   .reduce((acc, cls) => {
     acc[cls] = cls;
     return acc;
-    }, {});
+    }, {"": "Без класса"});
 
 export const costs = Array.from(new Set(cardsStore.map(card => card.cost)))
   .sort((a,b) => a - b)

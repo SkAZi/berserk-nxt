@@ -71,7 +71,7 @@ for index, row in df.iterrows():
         "elite": bool(int(row['elite']) if pd.notna(row['elite']) else 0),
         "uniq": bool(int(row['uniq']) if pd.notna(row['uniq']) else 0),
         "color": int(row['color']),
-        "class": str(row['class']).split('.') if pd.notna(row['class']) else [],
+        "class": str(row['class']).split('.') if pd.notna(row['class']) else [""],
         "type": int(row['type']) - 1,
         "life": int(row['life']) if pd.notna(row['life']) else None,
         "move": int(row['move']) if pd.notna(row['move']) else None,
@@ -85,4 +85,4 @@ for index, row in df.iterrows():
         "alt": "",
         "altto": None
     }
-    print(json.dumps(card, ensure_ascii=False, separators=(',', ':')) + ',')
+    print(', ' + json.dumps(card, ensure_ascii=False, separators=(',', ':')))
