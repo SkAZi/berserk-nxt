@@ -8,7 +8,7 @@
 
   import { popupStore, togglePopup, currentDeck, setDeckId, setSecondLevelMenu, showStats, loader, deckEditMode } from '../stores/interface.js';
   import { shortcuts } from '../utils/shortcuts.js';
-  import { karapet_score } from '../utils/draft.js';
+  import { get_karapet_score } from '../utils/draft.js';
   import { takeScreenshot } from '../utils/ux.js';
 
   import { option_set, user_decks, settings, settings_loaded } from '../stores/user_data.js';
@@ -165,16 +165,19 @@ function checkLegality(field) {
   const cardCounts = {};
   const results = [];
   let flyCost = 0
+  let land = 0
   byId(field).forEach(card => {
     if (card === null) return results.push([null, true]);
     if (!cardCounts[card.id]) cardCounts[card.id] = { count: 0, uniq: card.uniq, horde: card.horde };
     cardCounts[card.id].count += 1;
     if(card.type === 1) flyCost += card.cost;
+    if(card.type === 5) land += 1;
     let legal = true;
     if (cardCounts[card.id].uniq && cardCounts[card.id].count > 1) legal = false;
     else if (!cardCounts[card.id].horde && cardCounts[card.id].count > 3) legal = false;
     else if (cardCounts[card.id].horde && cardCounts[card.id].count > 6) legal = false;
     else if (flyCost > 15 && card.type === 1) legal = false;
+    else if (land > 1 && card.type === 5) legal = false;
     if (card.ban) legal = false;
     return results.push([card.id, legal]);
   });
@@ -359,7 +362,7 @@ function swapItems(drag_index, index) {
           <span class="elite-gold" class:over={gold2<0}>{gold2}</span>
           <span class="elite-silver" class:over={silver2<0}>{silver2}</span>
         </span>
-        <h4><span>{byId(on_field_cards).reduce((acc, card) => { return acc + (karapet_score[card.set_id][card.number] || 0) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
+        <h4><span>{byId(on_field_cards).reduce((acc, card) => { return acc + get_karapet_score(card.set_id, card.number) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
       </div>
     {/key}
 

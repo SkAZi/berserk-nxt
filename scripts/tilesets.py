@@ -27,6 +27,7 @@ def create_tilesets(folder_path):
 
             if os.path.exists(file_path):
                 img = Image.open(file_path)
+                img = img.resize(list(x // 2 for x in img.size))
             else:
                 # Создаем пустое изображение, если файла нет
                 img = Image.new('RGB', (tile_width, tile_height), (0, 0, 0))

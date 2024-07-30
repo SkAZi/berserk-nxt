@@ -7,7 +7,7 @@
   import { popupStore, togglePopup, toggleAside, currentDeck, toggleFullDeck, setSecondLevelMenu, deckEditMode, loader } from '../stores/interface.js';
   import { shortcuts } from '../utils/shortcuts.js';
   import { view_observer } from '../utils/view_observer.js';
-  import { karapet_score } from '../utils/draft.js'
+  import { get_karapet_score } from '../utils/draft.js'
   import { takeScreenshot } from '../utils/ux.js';
 
   import { option_set, user_decks, filteredSortedCards } from '../stores/user_data.js';
@@ -353,7 +353,7 @@
           &nbsp; &nbsp;
           <span style="font-size: 70%">ATK:</span> {byId($user_decks['decks'][deck_id].cards).reduce((acc, card) => { return (card['hit'] || [0,0,0]).map((num, index) => num + acc[index])}, [0,0,0]).join('-')}
         </h4>
-        <h4 style="text-align: right;"><span>{byId($user_decks['decks'][deck_id].cards).reduce((acc, card) => { return acc + (karapet_score[card.set_id][card.number] || 0) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
+        <h4 style="text-align: right;"><span>{byId($user_decks['decks'][deck_id].cards).reduce((acc, card) => { return acc + get_karapet_score(card.set_id, card.number) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
       </div>
      </div>
     {/key}

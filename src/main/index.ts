@@ -6,13 +6,18 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { default_settings } from '../renderer/src/stores/defaults.js'
 import { readCollection, writeCollection, readDeck, writeTTS, readTTS, readCompact } from '../renderer/src/utils/formats.js'
-import { checkForUpdates } from './updater.js'
+import { checkForUpdates, installAddon } from './updater.js'
 import fs from 'fs-extra';
 import axios from 'axios';
 
 const resources_path = is.dev ? join(__dirname, '../../resources') : join(process.resourcesPath, 'app.asar.unpacked', 'resources');
-const card_data = JSON.parse(fs.readFileSync(join(resources_path, 'data.json'), 'utf8'));
+let card_data = JSON.parse(fs.readFileSync(join(resources_path, 'data.json'), 'utf8'));
 const card_const = JSON.parse(fs.readFileSync(join(resources_path, 'const.json'), 'utf8'));
+if(fs.pathExistsSync(join(resources_path, 'addon.json'))){
+  const data_addon = JSON.parse(fs.readFileSync(join(resources_path, 'addon.json'), 'utf8'));
+  if(data_addon['cards']) card_data = card_data.concat(data_addon['cards']);
+  if(data_addon['const']) deepMerge(card_const, data_addon['const']);
+}
 
 const tar = require('tar');
 const chokidar = require('chokidar');
@@ -143,6 +148,23 @@ const watchers = {
 }
 
 let mainWindow;
+
+function deepMerge(target: object, source: object): object {
+  if (typeof target !== 'object' || target === null || typeof source !== 'object' || source === null)
+    return source;
+
+  for (const key in source) {
+    if (source.hasOwnProperty(key)) {
+      if (typeof source[key] === 'object' && source[key] !== null) {
+        if (!target[key]) target[key] = Array.isArray(source[key]) ? [] : {};
+        deepMerge(target[key], source[key]);
+      } else {
+        target[key] = source[key];
+      }
+    }
+  }
+  return target;
+}
 
 function createWindow(): void {
   mainWindow = new BrowserWindow({
@@ -282,6 +304,8 @@ menuTemplate.push({
     { label: 'Перезагрузить приложение', role: 'reload' },
     { label: 'Указать путь к настройкам', click: selectFolder },
     { label: 'Посмотреть резервные копии', click: () => { shell.openPath(settings_path || dirname(settings_store.path))} },
+    { type: 'separator' },
+    { label: 'Добавить тестовые данные', click: patchAddon },
     { type: 'separator' },
     { label: 'Выход', role: 'quit' }
   ]
@@ -747,6 +771,22 @@ function manageArchives(archivesDir) {
           console.log(`Старый архив ${archiveFiles[i]} удален`);
         });
       }
+    }
+  });
+}
+
+function patchAddon(): void{
+  dialog.showOpenDialog({
+    title: 'Загрузить тестовое дополнение',
+    properties: ['openFile'],
+    filters: [
+      { name: 'Архив ZIP', extensions: ['zip'] },
+    ]
+  }).then(file => {
+    if (file.canceled || file.filePaths.length == 0) return
+    if(installAddon(file.filePaths[0])) {
+      app.relaunch()
+      app.exit()
     }
   });
 }

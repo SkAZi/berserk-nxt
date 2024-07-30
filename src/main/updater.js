@@ -77,3 +77,25 @@ async function updateContent(localVersion, remoteVersion){
   fs.writeFileSync(join(resources_path, 'data.json'), data_js)
   fs.writeFileSync(join(resources_path, 'version.json'), JSON.stringify(remoteVersion, null, ' '))
 }
+
+export function installAddon(zipPath) {
+  try {
+    const extractPath = join(os.tmpdir(), basename(zipPath, extname(zipPath)))
+    fs.ensureDirSync(extractPath)
+
+    const zip = new AdmZip(zipPath)
+    zip.extractAllTo(extractPath, true)
+
+    fs.copySync(join(extractPath, 'addon.json'), join(resources_path, 'addon.json'), { overwrite: true })
+
+    const targetPath = join(resources_path, 'cards')
+    fs.ensureDirSync(targetPath)
+    fs.copySync(join(extractPath, 'cards'), targetPath, { overwrite: true })
+
+    fs.rmdirSync(extractPath, { recursive: true })
+    return true
+  } catch (error) {
+    console.error('Failed to install addon:', error)
+    return false
+  }
+}

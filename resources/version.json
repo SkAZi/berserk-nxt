@@ -1,7 +1,7 @@
 {
  "channel": "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/",
- "const.json": "0.8.0",
- "data.json": "0.9.4",
+ "const.json": "1.0.2",
+ "data.json": "1.0.4",
  "cards": [
   "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.6.3.zip",
   "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.6.4.zip",
@@ -10,6 +10,8 @@
   "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.6.7.zip",
   "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.6.8.zip",
   "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.7.0.zip",
-  "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.7.1.zip"
+  "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.7.1.zip",
+  "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.8.0.zip",
+  "https://raw.githubusercontent.com/SkAZi/bersency-nxt-release/main/archives/0.8.1.zip"
  ]
 }

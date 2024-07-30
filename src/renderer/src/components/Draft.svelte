@@ -21,8 +21,8 @@
     doPick,
     formatCurrentDate,
     validUserWeights,
-    karapet_score,
-    motd_order
+    get_karapet_score,
+    get_motd_order
   } from '../utils/draft.js'
   import { byId, sets, groupCards } from '../stores/cards.js'
 
@@ -319,9 +319,9 @@
   function pickHint(card) {
     if ($draft.show_score !== '1' || !$draft.boosters[0]?.length) return null
     if ($draft.variant == 'siled' || $draft.method == 'karapet')
-      return karapet_score[card.set_id][card.number] || '—'
+      return get_karapet_score(card.set_id, card.number) || '—'
     if ($draft.method == 'motd' || $draft.method == 'motd2') {
-      const index = motd_order[card.set_id].indexOf(card.number)
+      const index = get_motd_order(card.set_id, card.number)
       return index > -1 ? (10 - index / 20).toFixed(1) : '—'
     }
     if ($draft.method == 'user') {

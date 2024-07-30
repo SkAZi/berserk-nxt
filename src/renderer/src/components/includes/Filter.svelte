@@ -112,7 +112,7 @@
             && ($options.rarities.length == 0 || $options.rarities.includes(card.rarity.toString()))
             && ($options.colors.length == 0 || $options.colors.includes(card.color.toString()))
             && ($options.creature_types.length == 0 || $options.creature_types.includes(card.type.toString()))
-            && ($options.collection_alts.length == 0 || $options.collection_alts.includes(card.alt))
+            && ($options.collection_alts.length == 0 || $options.collection_alts.includes(card.alt) || ($options.collection_alts.includes("promo") && (card.promo === true || ["alt","altf","pf","altpf","fpf","altfpf"].includes(card.alt) )))
             && ($options.moves.length == 0 || $options.moves.includes((card.move || 0).toString()))
             && ($options.min_hits.length == 0 || $options.min_hits.includes((card.hit ? card.hit[0] || 0 : 0).toString()))
             && ($options.mid_hits.length == 0 || $options.mid_hits.includes((card.hit ? card.hit[1] || 0 : 0).toString()))
@@ -193,6 +193,7 @@
         {#each Object.keys(offitial_alternatives) as val}
           <label><input type="checkbox" name="collection_alts" value="{val}" checked={$options.collection_alts?.indexOf(val) >= 0} tabindex="0" />{offitial_alternatives[val]}</label>
         {/each}
+        <label><input type="checkbox" name="collection_alts" value="promo" checked={$options.collection_alts?.indexOf("promo") >= 0} tabindex="0" />Промо</label>
        </fieldset>
     </details>
     {/if}
