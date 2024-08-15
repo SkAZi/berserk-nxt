@@ -9,10 +9,12 @@
   import Draft from "./components/Draft.svelte";
   import Deal from "./components/Deal.svelte";
   import Decks from "./components/Decks.svelte";
+  //import Table from "./components/Table.svelte";
   import DropZone from './components/includes/DropZone.svelte'
   import About from './components/includes/About.svelte'
+  import PrintDeckList from './components/includes/PrintDeckList.svelte'
   import { groupCards, byId } from './stores/cards.js';
-  import { toggleAside, secondLevelMenu, toggleStats, toggleMainMenu, showMainMenu, setDeckId, currentDeck, deckEditMode, loader, toggleAbout } from './stores/interface.js';
+  import { toggleAside, secondLevelMenu, toggleStats, toggleMainMenu, showMainMenu, setDeckId, currentDeck, deckEditMode, loader, toggleAbout, togglePrintDeckList } from './stores/interface.js';
   import { shortcuts } from './utils/shortcuts.js';
   import { takeScreenshot } from './utils/ux.js'
   import { user_decks } from './stores/user_data.js';
@@ -23,6 +25,7 @@
     "/app/deckbuilder": DeckBuilder,
     "/app/deal": Deal,
     "/app/draft": Draft,
+//    "/app/table": Table,
   }
 
   onMount(() => {
@@ -75,7 +78,7 @@
         </button>
       </li>
       <li style="margin-left: -15px; margin-right: 20px;">
-        <button class="outline driver-stats" on:click={toggleStats} disabled={$router.path === '/app/draft' || ($router.path === '/app/deal' && $currentDeck.deck_id === null )}>
+        <button class="outline driver-stats" on:click={toggleStats} disabled={$router.path === '/app/draft' || $router.path === '/app/table' || ($router.path === '/app/deal' && $currentDeck.deck_id === null )}>
           <svg width="30" height="30" viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg" style="fill: #e8dff2;"><path fill-rule="evenodd" clip-rule="evenodd" d="M5.5 18.5V4H4V20H20V18.5H5.5Z"/><path d="M10.5 17V8.00131H12V17H10.5Z"/><path d="M7 17V12H8.5V17H7Z"/><path d="M17.5 17V10H19V17H17.5Z"/><path d="M14 17V5H15.5V17H14Z"/></svg>
         </button>
       </li>
@@ -83,6 +86,7 @@
       <li><Link href="/" aria-current={$router.path == '/' ? 'page' : ''}>Коллекция</Link></li>
       <li class="driver-deck-build"><Link href={$currentDeck.deck_id === null ? '/app/decks' : `/app/${$deckEditMode}`} aria-current={['/app/decks','/app/deal','/app/deckbuilder'].includes($router.path) ? 'page' : ''}>Колоды</Link></li>
       <li class="driver-deck-limited"><Link href="/app/draft" aria-current={$router.path == '/app/draft' ? 'page' : ''}>Лимитед</Link></li>
+      <!-- li class="driver-deck-table"><Link href="/app/table" aria-current={$router.path == '/app/table' ? 'page' : ''}>Стол</Link></li -->
     </ul>
     <ul class="driver-second-menu">
       {#each Object.entries($secondLevelMenu?.menu) as [name, action]}
@@ -116,6 +120,7 @@
       <ul>
         <li><a use:shortcuts on:action:primary={() => newDeck()}>Новая колода</a></li>
         <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('load-deck')}}>Загрузить колоду</a></li>
+        <li><a use:shortcuts on:action:primary={() => { togglePrintDeckList() }}>Распечатать деклист</a></li>
         {#if $currentDeck.deck_id !== null && ($router.path == '/app/deckbuilder' || $router.path == '/app/deal')}
         {@const deck_id = $currentDeck.deck_id}
         <li><a use:shortcuts on:action:primary={() => { cloneDeck(deck_id) }}>Дублировать колоду</a></li>
@@ -147,6 +152,8 @@
 </main>
 
 <About />
+
+<PrintDeckList />
 
 <DropZone>
   <h3>Перетащи файлы сюда,<br /><em>попробуем их импортировать...</em></h3>

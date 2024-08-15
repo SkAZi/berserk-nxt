@@ -322,11 +322,11 @@
       return get_karapet_score(card.set_id, card.number) || '—'
     if ($draft.method == 'motd' || $draft.method == 'motd2') {
       const index = get_motd_order(card.set_id, card.number)
-      return index > -1 ? (10 - index / 20).toFixed(1) : '—'
+      return index > -1 ? (10 - index / 25).toFixed(1) : '—'
     }
     if ($draft.method == 'user') {
       const index = parsedUserMetod[card.set_id].indexOf(card.number)
-      return index > -1 ? (10 - index / 20).toFixed(1) : '—'
+      return index > -1 ? (10 - index / 25).toFixed(1) : '—'
     }
     return null
   }
@@ -404,7 +404,7 @@
               >
                 {#if index}<option value=""></option>{/if}
                 {#each Object.entries(sets) as [key, set_name]}
-                  {#if parseInt(key) % 10 == 0 && parseInt(key) < 40}
+                  {#if parseInt(key) % 10 == 0}
                     <option value={key}>{set_name}</option>
                   {/if}
                 {/each}

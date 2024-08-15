@@ -91,9 +91,7 @@
       }, new Set())].sort((a, b) => a - b);
   }
 
-  function handleFilterChange(event, type) {
-    const { value, checked } = event.target;
-
+  function handleFilterChange(value, checked, type) {
     options.update($options => {
       const updatedOptions = { ...$options };
 
@@ -133,6 +131,25 @@
       return $user_decks;
     });
   }
+
+  function removeTag(index){
+    const tag = $user_decks['tags'][index]
+    handleFilterChange(tag, false, 'filter_tags')
+    user_decks.update(($user_decks) => {
+      $user_decks['tags'].splice(index, 1)
+      const tags = $user_decks['tags']
+      const decks = $user_decks['decks'].map((deck)=> {
+        deck.tags = deck.tags.filter((dtag)=> dtag !== tag)
+        return deck
+      })
+      return {...$user_decks, tags: tags, decks: decks}
+    })
+  }
+
+  function handleTagsChanged(e){
+    const {value, checked} = e.target;
+    handleFilterChange(value, checked, 'filter_tags')
+  }
 </script>
 
 {#if $filterAside.isOpen}
@@ -143,7 +160,7 @@
         {#each $user_decks['tags'] as _val, index}
             <div class="row">
                 <input type="text" bind:value="{$user_decks['tags'][index]}" tabindex="0" />
-                <button class="outline" on:click={()=> { user_decks.update(($user_decks) => { $user_decks['tags'].splice(index, 1); return {...$user_decks} }) }}>&minus;</button>
+                <button class="outline" on:click={()=> { removeTag(index) }}>&minus;</button>
             </div>
         {/each}
         <div><button class="outline plus" on:click={()=> { user_decks.update(($user_decks) => { $user_decks['tags'].push(`Тег ${$user_decks['tags'].length+1}`); return {...$user_decks} }) }}>+</button></div>
@@ -153,7 +170,7 @@
         </fieldset>
       {:else}
       <input type="search" id="search" use:shortcuts={{keyboard: true}} on:action:find={(e)=> { e.target.focus() }} on:action:close={()=> { if(!$popupStore.isOpen) options.set({...$options, searchQuery: ""}) }} class="driver-search" name="search" placeholder="Поиск..." bind:value={searchQuery} tabindex="0" />
-      <fieldset on:change="{(e) => { handleFilterChange(e, 'filter_tags') }}">
+      <fieldset on:change="{handleTagsChanged}">
         {#each $user_decks['tags'] as val, ival}
             <label><input type="checkbox" name="deck_tag_id" value="{val}" checked={filter_tags.includes(val)} tabindex="0" />{val} {#if ival < 9}<sup style="color: #666;">{ival+1}</sup>{/if}</label>
         {/each}

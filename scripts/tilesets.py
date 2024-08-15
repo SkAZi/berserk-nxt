@@ -1,6 +1,6 @@
 from PIL import Image
 import os
-import re
+import re, math
 
 def create_tilesets(folder_path):
     # Отфильтровываем список файлов, оставляя только подходящие имена
@@ -14,7 +14,7 @@ def create_tilesets(folder_path):
     image_width, image_height = cols * tile_width, rows * tile_height
 
     # Определяем общее количество страниц
-    total_pages = 219 // 69
+    total_pages = math.ceil(219 / 69)
 
     for page_num in range(total_pages):
         # Создаем новое изображение с чёрным фоном

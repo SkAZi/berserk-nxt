@@ -52,6 +52,9 @@ def process_icons(row):
     icons = {field: int(row[field]) for field in icons_fields if pd.notna(row[field])}
     return icons
 
+with open('alts.json', 'r') as f:
+    alts_data = json.load(f)
+
 # Загрузка данных из CSV файла
 df = pd.read_csv('4set.csv', sep=',')
 
@@ -61,8 +64,9 @@ for index, row in df.iterrows():
     if not pd.notna(row['name']):
         continue
     icons = process_icons(row)
+    fullid = f"{40*1000 + int(row['number'])}"
     card = {
-        "id": f"{40*1000 + int(row['number'])}",
+        "id": fullid,
         "set_id": 40,
         "number": int(row['number']),
         "name": row['name'],
@@ -81,8 +85,13 @@ for index, row in df.iterrows():
         "art": row['artist'],
         "tokens": process_tokens(row, icons),
         "prints": {},
-        "alts": [],
+        "alts": ["alt"] if fullid in alts_data["alt"] else [],
         "alt": "",
         "altto": None
     }
     print(', ' + json.dumps(card, ensure_ascii=False, separators=(',', ':')))
+    if fullid in alts_data["alt"]:
+        card["id"] = fullid + "alt"
+        card["alt"] = "alt"
+        card["altto"] = fullid
+        print(', ' + json.dumps(card, ensure_ascii=False, separators=(',', ':')))

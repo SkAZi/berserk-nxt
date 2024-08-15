@@ -158,6 +158,9 @@ const stores = {
         if(!store.has("settings.collection_options.icons")) store.set("settings.collection_options.icons", [])
         if(!store.has("settings.deckbuilding_options.icons")) store.set("settings.deckbuilding_options.icons", [])
       },
+      '1.2.10': (store) => {
+        store.set("settings.other_options", {})
+      },
     }
   })
 };
@@ -215,4 +218,13 @@ window.electron.ipcRenderer.on('export-selected', () => {
 window.electron.ipcRenderer.on('load-collection', (result, reset, minus) => {
   if(result === null) loadCollection(reset ? {} : stores['cards'].get("cards"), minus)
   else window.electron.ipcRenderer.send('refresh', null, result, null)
+})
+
+window.electron.ipcRenderer.on('print-decklists', (data) => {
+  console.log(data);
+  let w = window.open();
+  w.document.write(data);
+  w.document.close();
+  w.print();
+  w.close();
 })

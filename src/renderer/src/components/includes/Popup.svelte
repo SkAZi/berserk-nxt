@@ -124,8 +124,8 @@
   <article class:noside={type !== 'collection'}>
     {#if card}
     <div class="card-wrapper">
-      <div class="card alt-{card.alt}" class:featured={$featured[""].includes(card.id)}>
-        <a class="feature" class:collection={type === 'collection'} style={`color: ${$featured[""].includes(card.id) ?  '#7540bf' : '#fff'}`}
+      <div class="card alt-{card.alt}" class:featured={$featured[""].includes(card?.id)}>
+        <a class="feature" class:collection={type === 'collection'} style={`color: ${$featured[""].includes(card?.id) ?  '#7540bf' : '#fff'}`}
           use:shortcuts on:action:primary={() => { click=true; toggleFeatured(card); }}>✓</a>
         {#if card.ban}<img class="ban" class:small={type !== 'count'} src={banURL} alt="" />{/if}
         <span class="card__rotator">

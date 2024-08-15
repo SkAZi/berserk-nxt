@@ -86,7 +86,10 @@ export function installAddon(zipPath) {
     const zip = new AdmZip(zipPath)
     zip.extractAllTo(extractPath, true)
 
-    fs.copySync(join(extractPath, 'addon.json'), join(resources_path, 'addon.json'), { overwrite: true })
+    const baseName = basename(zipPath, extname(zipPath));
+    const addonFileName = `addon-${baseName.replace('addon-','')}.json`;
+
+    fs.copySync(join(extractPath, 'addon.json'), join(resources_path, addonFileName), { overwrite: true })
 
     const targetPath = join(resources_path, 'cards')
     fs.ensureDirSync(targetPath)
@@ -98,4 +101,9 @@ export function installAddon(zipPath) {
     console.error('Failed to install addon:', error)
     return false
   }
+}
+
+export function deinstallAddon(name) {
+  fs.removeSync(join(resources_path, name))
+  return true
 }

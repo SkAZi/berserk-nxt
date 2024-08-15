@@ -50,7 +50,7 @@ export default defineConfig({
       name: 'generate-asset-list',
       generateBundle(options, bundle) {
         const CODE_CACHE_NAME = `code-cache-${new Date().toISOString().replace(/[-:.TZ]/g, '')}`;
-        
+
         const assets = Object.keys(bundle).filter(name => {
           const asset = bundle[name];
           return asset.type === 'asset' || asset.isEntry;

@@ -8,6 +8,7 @@ export const option_set = {
   deckbuilding_options: writable(default_deckbuilding_options),
   draft_options: writable(default_draft_options),
   deal_options: writable(default_deal_options),
+  other_options: writable({}),
 };
 
 function createElectronStore(key, loaded_keys) {
@@ -40,7 +41,8 @@ function createElectronStore(key, loaded_keys) {
     }
   };
 }
-export const settings = createElectronStore('settings', ['collection_options','deckbuilding_options','draft_options','deal_options']);
+
+export const settings = createElectronStore('settings', ['collection_options','deckbuilding_options','draft_options','deal_options','other_options']);
 export const user_cards = createElectronStore('cards', ['cards']);
 export const user_decks = createElectronStore('decks', ['decks']);
 export const featured = createElectronStore('featured', ['featured']);

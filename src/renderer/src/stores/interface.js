@@ -86,3 +86,13 @@ export function toggleAbout() {
     return { isOpen: !$aboutStore.isOpen }
   })
 }
+
+export const printDeckListStore = writable({
+  isOpen: false
+})
+
+export function togglePrintDeckList() {
+  printDeckListStore.update(($printDeckListStore) => {
+    return { isOpen: !$printDeckListStore.isOpen }
+  })
+}

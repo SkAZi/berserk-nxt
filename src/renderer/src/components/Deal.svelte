@@ -137,29 +137,40 @@
     }, new Set())].sort((a, b) => a - b);
   }
 
-function crystals(deck_cards, isFirstPlayer) {
-  let goldCrystals = isFirstPlayer ? 24 : 25;
-  let silverCrystals = isFirstPlayer ? 22 : 23;
-  goldCrystals -= $options.mulligan;
-  const uniqueColors = collectColors(deck_cards).filter(color => color !== 32).length;
-  if (uniqueColors > 1) goldCrystals -= (uniqueColors - 1);
+  function crystals(deck_cards, isFirstPlayer) {
+    let goldCrystals = isFirstPlayer ? 24 : 25;
+    let silverCrystals = isFirstPlayer ? 22 : 23;
+    goldCrystals -= $options.mulligan;
+    const uniqueColors = collectColors(deck_cards).filter(color => color !== 32).length;
+    if (uniqueColors > 1) goldCrystals -= (uniqueColors - 1);
 
-  byId(deck_cards).forEach(card => {
-    if (card.elite) {
-      goldCrystals -= card.cost;
-    } else {
-      if (silverCrystals >= card.cost) {
-        silverCrystals -= card.cost;
-      } else {
-        let remainingCost = card.cost - silverCrystals;
-        silverCrystals = 0;
-        goldCrystals -= remainingCost;
-      }
-    }
-  });
+    byId(deck_cards).sort((a, b) => b.elite - a.elite).forEach(card => {
+        if (card.elite) {
+          goldCrystals -= card.cost;
+        } else {
+          if (silverCrystals >= card.cost) {
+            silverCrystals -= card.cost;
+          } else {
+            let remainingCost = card.cost - silverCrystals;
+            silverCrystals = 0
+            if(goldCrystals > 0) {
+              if(goldCrystals >= remainingCost){
+                goldCrystals -= remainingCost
+                remainingCost = 0
+              } else {
+                remainingCost -= goldCrystals
+                goldCrystals = 0
+              }
+            }
+            silverCrystals -= remainingCost
+          }
+        }
+      });
 
-  return [goldCrystals, silverCrystals];
-}
+    return [goldCrystals, silverCrystals];
+  }
+
+
 
 function checkLegality(field) {
   const cardCounts = {};

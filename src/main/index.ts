@@ -6,18 +6,21 @@ import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { default_settings } from '../renderer/src/stores/defaults.js'
 import { readCollection, writeCollection, readDeck, writeTTS, readTTS, readCompact } from '../renderer/src/utils/formats.js'
-import { checkForUpdates, installAddon } from './updater.js'
+import { checkForUpdates, installAddon, deinstallAddon } from './updater.js'
 import fs from 'fs-extra';
 import axios from 'axios';
 
 const resources_path = is.dev ? join(__dirname, '../../resources') : join(process.resourcesPath, 'app.asar.unpacked', 'resources');
 let card_data = JSON.parse(fs.readFileSync(join(resources_path, 'data.json'), 'utf8'));
 const card_const = JSON.parse(fs.readFileSync(join(resources_path, 'const.json'), 'utf8'));
-if(fs.pathExistsSync(join(resources_path, 'addon.json'))){
-  const data_addon = JSON.parse(fs.readFileSync(join(resources_path, 'addon.json'), 'utf8'));
+
+const addon_names : string[] = []
+fs.readdirSync(resources_path).filter(file => file.startsWith('addon') && file.endsWith('.json')).forEach(addon_name => {
+  addon_names.push(addon_name)
+  const data_addon = JSON.parse(fs.readFileSync(join(resources_path, addon_name), 'utf8'));
   if(data_addon['cards']) card_data = card_data.concat(data_addon['cards']);
   if(data_addon['const']) deepMerge(card_const, data_addon['const']);
-}
+})
 
 const tar = require('tar');
 const chokidar = require('chokidar');
@@ -47,6 +50,9 @@ const settings_store = new Store({
     '0.8.1': (store) => {
       if(!store.has("settings.collection_options.icons")) store.set("settings.collection_options.icons", [])
       if(!store.has("settings.deckbuilding_options.icons")) store.set("settings.deckbuilding_options.icons", [])
+    },
+    '1.2.10': (store) => {
+      store.set("settings.other_options", {})
     }
   }
 })
@@ -254,6 +260,10 @@ app.whenReady().then(async () => {
     exportCollection('proberserk', ['txt'], true)
   })
 
+  ipcMain.on('print-decklists', (_event, data) => {
+    printDeckLists(data)
+  })
+
   ipcMain.on('start-tour', (_event) => {
     runHelp()
   })
@@ -297,19 +307,25 @@ app.on('window-all-closed', () => {
   }
 })
 
+
+const submenuTemplate : MenuItemConstructorOptions[] = [
+  { label: 'Перезагрузить приложение', role: 'reload' },
+  { label: 'Указать путь к настройкам', click: selectFolder },
+  { label: 'Посмотреть резервные копии', click: () => { shell.openPath(settings_path || dirname(settings_store.path))} },
+  { type: 'separator' },
+  { label: 'Добавить тестовые данные', click: patchAddon }
+]
+addon_names.map(name => {
+  submenuTemplate.push({ label: `Удалить: ${name.replace(/^addon\-?(.*)\.json$/,'$1') || 'basic'}`, click: () => { removeAddon(name) } })
+})
+submenuTemplate.push({ type: 'separator' })
+submenuTemplate.push({ label: 'Выход', role: 'quit' })
+
 export const menuTemplate : MenuItemConstructorOptions[] = [];
 menuTemplate.push({
   label: app.getName(),
-  submenu: [
-    { label: 'Перезагрузить приложение', role: 'reload' },
-    { label: 'Указать путь к настройкам', click: selectFolder },
-    { label: 'Посмотреть резервные копии', click: () => { shell.openPath(settings_path || dirname(settings_store.path))} },
-    { type: 'separator' },
-    { label: 'Добавить тестовые данные', click: patchAddon },
-    { type: 'separator' },
-    { label: 'Выход', role: 'quit' }
-  ]
-});
+  submenu: submenuTemplate
+})
 if(process.platform === 'darwin') {
   menuTemplate.push({
     label: 'Правка',
@@ -789,4 +805,55 @@ function patchAddon(): void{
       app.exit()
     }
   });
+}
+
+function removeAddon(name) : void {
+  const response = dialog.showMessageBoxSync({
+    type: 'warning',
+    buttons: ['Отменить', 'Да, удалить'],
+    defaultId: 0,
+    cancelId: 0,
+    title: 'Подтверди удаление',
+    message: `Уверен, что нужно удалить дополнение: "${name.replace(/^addon\-?(.*)\.json$/,'$1') || 'basic'}"?`
+  });
+
+  if (response === 1) {
+    if (deinstallAddon(name)) {
+      app.relaunch()
+      app.exit()
+    }
+  }
+}
+
+function printDeckLists(data) {
+  let swindow = new BrowserWindow({
+    width: 800,
+    height: 600,
+    show: false,
+  })
+
+  const path = join(os.tmpdir(), 'nxt-print-list.html')
+  fs.writeFileSync(path, data, 'utf-8');
+  swindow.loadURL(`file://${path}`);
+  swindow.webContents.on('did-finish-load', () => {
+    swindow.webContents.print({}, (success, errorType) => {
+      swindow.close();
+      if (!success) console.log(errorType);
+    });
+  });
+
+  // dialog.showSaveDialog({
+  //   title: 'Сохранить деклист',
+  //   defaultPath: app.getPath('downloads'),
+  //   buttonLabel: 'Сохранить',
+  //   filters: [
+  //     { name: 'HTML для печати', extensions: ['html'] }
+  //   ]
+  // }).then(file => {
+  //   if (!file.canceled && file.filePath) {
+  //     fs.writeFileSync(file.filePath.toString(), data, 'utf-8');
+  //   }
+  // }).catch(err => {
+  //   console.log(err);
+  // });
 }
