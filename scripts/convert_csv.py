@@ -29,6 +29,36 @@ TYPE = {
     5: "Местность",
 }
 
+PROPS = {
+    "sht": "Выстрел",
+    "thr": "Метание",
+    "dsc": "Разряд",
+    "sph": "Особый удар",
+    "uht": "Безответный удар",
+    "mht": "Магический удар",
+    "uchr": "{uchr}",
+    "spl": "Заклинание",
+    "imp": "Воздействие",
+    "inc": "Бестелесный",
+    "fry": "Бешенство",
+    "bls": "Благословление",
+    "vlh": "Вальхалла",
+    "vmp": "Вампиризм",
+    "fin": "Добивание",
+    "cnc": "Концентрация",
+    "dep": "На глубине",
+    "sur": "На поверхности",
+    "clm": "Неповоротливость",
+    "psn": "Отравление",
+    "cur": "Проклятие",
+    "prp": "Пророчество",
+    "lep": "Прыжок",
+    "das": "Рывок",
+    "frm": "Строй",
+    "tlp": "Телепортация",
+    "nec": "Трупоедство"
+}
+
 def process_tokens(row, icons):
     base_text = str(row['text']) if pd.notna(row['text']) else 0
     for icon in ICONS.keys():
@@ -37,7 +67,7 @@ def process_tokens(row, icons):
     text = ' '.join([row['name'], TYPE[int(row['type']) - 1], " ".join(str(row['class']).split('.')), text])
     tags = []
     for icon in icons.keys():
-        if icon != '':
+        if icon != '' and icon in TAGS:
             tags.append(TAGS[icon])
             text += " " + ICONS[icon]
 
@@ -50,6 +80,9 @@ def process_icons(row):
     # Собираем все поля icons
     icons_fields = ['ova', 'ovz', 'ovs', 'zoal', 'zoo', 'zov', 'zoz', 'zom', 'zor', 'zot', 'armor', 'direct', 'regen', 'stamina']
     icons = {field: int(row[field]) for field in icons_fields if pd.notna(row[field])}
+    for icn, name in PROPS.items():
+        if name.lower() in row['text'].lower():
+            icons[icn] = 0
     return icons
 
 with open('alts.json', 'r') as f:

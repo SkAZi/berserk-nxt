@@ -25,7 +25,7 @@
     "/app/deckbuilder": DeckBuilder,
     "/app/deal": Deal,
     "/app/draft": Draft,
-//    "/app/table": Table,
+    //"/app/table": Table,
   }
 
   onMount(() => {

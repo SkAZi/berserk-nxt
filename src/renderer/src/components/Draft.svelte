@@ -347,7 +347,7 @@
       <li class:current={$draft.step === 2}><span>Подключение</span></li>
     </ul>
   </nav -->
-    <article style="margin-top: 1em">
+    <article style="margin: 1em 0 -1.5em 0">
       {#if $draft.step === 0}
         <fieldset>
           <label>
