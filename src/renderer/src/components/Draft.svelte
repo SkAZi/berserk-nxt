@@ -676,6 +676,7 @@
         {#each byId($draft.own_cards) as card, index (index)}
           <div use:sortable={{ store: draft, key: 'own_cards' }}>
             <Card
+              showTopText={pickHint(card)}
               card={($draft.step === 4 && $draft.show_score === '2') ? {number: "../back", alt: ""} : card}
               onpreview={togglePopup}
               onprimary={() => deckCardClick(index)}

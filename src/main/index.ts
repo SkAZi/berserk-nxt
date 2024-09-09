@@ -829,13 +829,13 @@ function printDeckLists(data) {
   let swindow = new BrowserWindow({
     width: 800,
     height: 600,
-    show: false,
+    show: true,
   })
 
   const path = join(os.tmpdir(), 'nxt-print-list.html')
   fs.writeFileSync(path, data, 'utf-8');
   swindow.loadURL(`file://${path}`);
-  swindow.webContents.on('did-finish-load', () => {
+  swindow.webContents.on('dom-ready', () => {
     swindow.webContents.print({}, (success, errorType) => {
       swindow.close();
       if (!success) console.log(errorType);
