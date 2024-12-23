@@ -41,23 +41,39 @@
 
   onMount(() => {
     if ($draft.step > 0) {
-      setSecondLevelMenu(
-        $draft.step === 5 ? { 'Новый турнир': stopDraft } : { 'Прервать турнир': stopDraft }
-      )
+      if(byId([...$draft.own_cards, ...$draft.side]).filter((x) => !x).length) {
+        stopDraft()
+      } else {
+        setSecondLevelMenu(
+          $draft.step === 5 ?
+            ($draft.variant === 'draft' && $draft.last_boosters ?
+              { 'Переиграть' : replayDraft, 'Новый турнир': stopDraft } : {'Новый турнир': stopDraft })
+            : { 'Прервать турнир': stopDraft }
+        )
+      }
+    } else {
+      document.getElementById('app').classList.add('ellion');
     }
     const startTour = (_event) => {
       draft_driver().drive()
     }
     window.electron.ipcRenderer.on('start-tour', startTour)
+    window.electron.ipcRenderer.on('start-draft', (_, draft_data) => {
+      replayDraft(null, draft_data)
+    })
     loader.set(false)
     return () => {
       loader.set(true)
       setSecondLevelMenu()
+      document.getElementById('app').classList.remove('ellion')
       window.electron.ipcRenderer.removeAllListeners('start-tour')
+      window.electron.ipcRenderer.removeAllListeners('start-draft')
     }
   })
 
   draft.subscribe(($draft) => {
+    if($draft.step === 0) document.getElementById('app').classList.add('ellion');
+    else document.getElementById('app').classList.remove('ellion');
     if ($settings_loaded['settings'])
       settings.update(($settings) => {
         return { ...$settings, draft_options: $draft }
@@ -82,12 +98,41 @@
     return $draft.own_cards.length > 0 && $draft.step === 0
   }
 
+  function loadDraft() {
+    let last = window.electron.ipcRenderer.sendSync('load-draft')
+    replayDraft(null, last)
+  }
+
+  function replayDraft(_event, last_boosters = null) {
+    draft.update((draft) => {
+      if (last_boosters) draft.last_boosters = JSON.parse(JSON.stringify(last_boosters))
+      if (draft.last_boosters && draft.last_boosters[0]) {
+        draft.current_booster = -1
+        let boosters = JSON.parse(JSON.stringify(draft.last_boosters[0]))
+        setSecondLevelMenu({ 'Прервать турнир': stopDraft })
+        return {
+          ...draft,
+          draft_id: v4(),
+          step: 4,
+          players: boosters.length,
+          boosters,
+          current_booster: 0,
+          own_cards: [],
+          side: [],
+          last_boosters: draft.last_boosters,
+          replay: true
+        }
+      }
+      return draft
+    })
+  }
+
   function beginDraft() {
     setSecondLevelMenu({ 'Прервать турнир': stopDraft })
     draft.update((draft) => {
       draft.current_booster = -1
       if (draft.variant === 'draft') {
-        let [boosters, current_booster] = generateBoosters(draft)
+        let [boosters, current_booster, last_boosters] = generateBoosters({...draft, replay: false}, [null,null,null,null])
         return {
           ...draft,
           draft_id: v4(),
@@ -95,7 +140,9 @@
           boosters,
           current_booster,
           own_cards: [],
-          side: []
+          side: [],
+          last_boosters,
+          replay: false
         }
       } else {
         const boosters = draft.boosters_set.flatMap((set_id) =>
@@ -108,7 +155,9 @@
           boosters,
           current_booster: -1,
           own_cards: [],
-          side: boosters.flat()
+          side: boosters.flat(),
+          last_boosters: null,
+          replay: false
         }
       }
     })
@@ -126,21 +175,32 @@
     setup({ step: 0 })
   }
 
-  function generateBoosters(draft) {
+  function generateBoosters(draft, last_boosters) {
     while (
       ++draft.current_booster < draft.boosters_set.length &&
       draft.boosters_set[draft.current_booster] == ''
     ) {}
     let boosters = []
-    if (draft.current_booster >= draft.boosters_set.length) {
-      setSecondLevelMenu({ 'Новый турнир': stopDraft })
-      return [boosters, -1]
+    if (draft.current_booster >= draft.boosters_set.length || (draft.variant == 'draft' && draft.current_booster > 3)) {
+      setSecondLevelMenu(
+          draft.last_boosters ? { 'Переиграть' : replayDraft, 'Новый турнир': stopDraft } : {'Новый турнир': stopDraft }
+        )
+      return [boosters, -1, last_boosters]
     }
 
-    for (let i = 0; i < draft.players; i++)
-      boosters.push(getBooster(cardsStore, parseInt(draft.boosters_set[draft.current_booster])))
+    if(draft.replay) {
+      if(draft.last_boosters && draft.last_boosters[draft.current_booster]){
+        boosters = JSON.parse(JSON.stringify(draft.last_boosters[draft.current_booster]))
+        last_boosters = draft.last_boosters
+      } else
+        return [boosters, -1, last_boosters]
+    } else {
+      for (let i = 0; i < draft.players; i++)
+        boosters.push(getBooster(cardsStore, parseInt(draft.boosters_set[draft.current_booster])))
+      last_boosters[draft.current_booster] = JSON.parse(JSON.stringify(boosters))
+    }
 
-    return [boosters, draft.current_booster]
+    return [boosters, draft.current_booster, last_boosters]
   }
 
   function boosterCardClick(index) {
@@ -151,6 +211,7 @@
       let [picked_card] = boosters[0].splice(index, 1)
       let own_cards = [...draft.own_cards]
       let side = [...draft.side]
+      let last_boosters = draft.last_boosters
 
       for (let i = 1; i < draft.players; i++)
         boosters[i].splice(
@@ -159,8 +220,7 @@
         )
 
       if (boosters[0].length == 0) {
-        ;[boosters, current_booster] = generateBoosters(draft)
-        if (draft.variant == 'draft' && current_booster > 3) current_booster = -1
+        [boosters, current_booster, last_boosters] = generateBoosters(draft, draft.last_boosters)
         if (current_booster == -1) {
           step = 5
           side = [...own_cards, picked_card]
@@ -172,7 +232,7 @@
         boosters = [boosters.pop(), ...boosters]
         own_cards.push(picked_card)
       }
-      return { ...draft, own_cards: own_cards, side: side, boosters, current_booster, step }
+      return { ...draft, own_cards: own_cards, side: side, boosters, current_booster, last_boosters, step }
     })
   }
 
@@ -222,6 +282,13 @@
         }
       else return $user_decks
     })
+
+    if(deal) {
+      option_set['deal_options'].update(($options) => {
+        return {...$options, deck_id: null}
+      })
+    }
+
     navigate(deal ? '/app/deal/' : '/app/deckbuilder/')
   }
 
@@ -312,11 +379,12 @@
 
   function count(deck_cards, key, value) {
     return deck_cards.reduce((acc, card_id) => {
-      return acc + (byId(card_id)[key] === value ? 1 : 0)
+      return acc + (byId(card_id) && byId(card_id)[key] === value ? 1 : 0)
     }, 0)
   }
 
   function pickHint(card) {
+    if(!card) return null
     if ($draft.show_score !== '1' || !$draft.boosters[0]?.length) return null
     if ($draft.variant == 'siled' || $draft.method == 'karapet')
       return get_karapet_score(card.set_id, card.number) || '—'
@@ -333,6 +401,7 @@
 </script>
 
 {#if $draft.step <= 3}
+  <a href="https://t.me/+w0mT8aSk6xVlMTQ6" target="_blank" id="ellion"></a>
   <section
     class="content draft_form"
     use:shortcuts={{ keyboard: true }}
@@ -377,7 +446,8 @@
                   style="width: 13em"
                 />
                 <select bind:value={$draft.method} class="driver-tournir-model">
-                  <option value="motd">Статистика MotD.ru</option>
+                  <option value="motd">Статистика MotD.ru (хаотичный)</option>
+                  <option value="motd2">Статистика MotD.ru (фиксированный)</option>
                   <option value="karapet">Модель Карапета</option>
                   <option value="user">Модель пользователя</option>
                 </select>
@@ -412,12 +482,12 @@
             {/each}
           </label>
         </fieldset>
-        <div class="button-container" style="display: flex; justify-content: space-between;">
+        <div class="button-container" style="display: flex; justify-content: space-between; text-align: right">
           <span>
-            {#if canContinueDraft()}<button class="secondary" on:click={continueDraft}
-                >Продолжить прошлый</button
-              >{/if}
+            <button class="secondary" on:click={continueDraft} style:visibility={canContinueDraft() ? "visible" : "hidden"}
+                >Продолжить прошлый</button>
           </span>
+          <span><button class="secondary" on:click={loadDraft}>Загрузить драфт</button></span>
           <span><button on:click={beginDraft}>Начать турнир</button></span>
         </div>
       {:else if $draft.step === 1}
@@ -484,6 +554,7 @@
       {/if}
     </article>
   </section>
+  <a href="https://t.me/+w0mT8aSk6xVlMTQ6" target="_blank" id="ellion-text"></a>
 {:else}
   {#if $draft.step === 5}
     <aside class="right">
@@ -494,7 +565,7 @@
           {#if $draft.own_cards.length == 0}
             <p class="actions">
               <button
-                class="secondary"
+                class="outline"
                 on:click={() => {
                   moveCards(true)
                 }}>Всё в колоду</button
@@ -503,7 +574,7 @@
           {:else if $draft.side.length == 0}
             <p class="actions">
               <button
-                class="secondary"
+                class="outline"
                 on:click={() => {
                   moveCards(false)
                 }}>Всё в сайд</button
@@ -626,6 +697,23 @@
             </button>
           </div>
         </div>
+
+        {#if $draft.variant == 'draft' && $draft.last_boosters}
+        <p class="actions" style="margin-top: 15px;">
+            <button
+                class="secondary"
+                style="width: 100%;"
+                on:click={(_e) => {
+                    window.electron.ipcRenderer.send(
+                        'save-draft',
+                        null,
+                        $draft.last_boosters,
+                        deck_name
+                    )
+                }}>Сохранить турнир</button
+            >
+        </p>
+        {/if}
       </section>
     </aside>
   {/if}
@@ -677,7 +765,7 @@
           <div use:sortable={{ store: draft, key: 'own_cards' }}>
             <Card
               showTopText={pickHint(card)}
-              card={($draft.step === 4 && $draft.show_score === '2') ? {number: "../back", alt: ""} : card}
+              card={($draft.step === 4 && $draft.show_score === '2' && $draft.boosters[0].length !== 1) ? {number: "../back", alt: ""} : card}
               onpreview={togglePopup}
               onprimary={() => deckCardClick(index)}
               showCount={false}

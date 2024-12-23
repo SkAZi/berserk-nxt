@@ -6,7 +6,7 @@ export const cards = cardsStore.reduce((ret, card)=> {
   return ret;
 }, {})
 
-export const classes = Array.from(new Set(cardsStore.flatMap(card => card.class || [])))
+export const classes = Array.from(new Set(["Герой", ...cardsStore.flatMap(card => card.class || [])]))
   .filter(cls => cls !== "")
   .sort()
   .reduce((acc, cls) => {
@@ -58,6 +58,7 @@ export const max_hits = Array.from(new Set(cardsStore.map(card => card.hit ? car
 
 export const offitial_alternatives = Array.from(new Set(cardsStore.map(card => card.alt)))
   .reduce((acc, alt) => {
+    if (alt.startsWith("alt_")) return acc;
     acc[alt] = alt == "" ? "Обычная" : alternatives[alt];
     return acc;
     }, {});
@@ -87,8 +88,10 @@ export function groupCards(deck_cards, sortBy = 'cost') {
   });
 
   return Object.entries(cardCountMap)
-      .map(([card_id, count]) => [byId(card_id), count])
+      .map(([card_id, count]) => byId(card_id) ? [byId(card_id), count] : [null, card_id])
       .sort((a, b) => {
+        if (!a[0]) return 1;
+        if (!b[0]) return -1;
         if (sortBy === 'asis')
           return orderMap[a[0].id] - orderMap[b[0].id];
         if (sortBy === 'color')
@@ -117,6 +120,7 @@ return (1000 * (b[0].elite ? 1 : 0) + 100 * b[0].cost + b[0].color) - (1000 * (a
       'zoo':0,'zot':0,'zom':0,'zoz':0,'zor':0,'zov':0,'zoal':0}}
 
     return cards.reduce((acc, card) => {
+      if(!card) return acc
       acc["tcount"] += 1
       Object.keys(card.icons).forEach(i => acc['icons'][i] += 1)
       if(card.hit && card.hit.length === 3) {

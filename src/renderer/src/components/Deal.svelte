@@ -75,7 +75,7 @@
     setDeckId(index)
     field_meta = Array.from({ length: 15 }, () => ({}))
     options.update(($options) => {
-      const deck = shuffleArray([...$user_decks['decks'][index].cards])
+      const deck = shuffleArray([...$user_decks['decks'][index].cards.filter((card_id) => byId(card_id) )])
       const deal = deck.splice(0, 15)
       return {...$options, deck_id: deck_id, deal: deal, deck: deck, mulligan: 0, field: new Array(15).fill(null)}
     })
@@ -145,6 +145,7 @@
     if (uniqueColors > 1) goldCrystals -= (uniqueColors - 1);
 
     byId(deck_cards).sort((a, b) => b.elite - a.elite).forEach(card => {
+        if (!card) return
         if (card.elite) {
           goldCrystals -= card.cost;
         } else {
@@ -165,6 +166,7 @@
             silverCrystals -= remainingCost
           }
         }
+        return
       });
 
     return [goldCrystals, silverCrystals];
@@ -178,7 +180,7 @@ function checkLegality(field) {
   let flyCost = 0
   let land = 0
   byId(field).forEach(card => {
-    if (card === null) return results.push([null, true]);
+    if (!card) return results.push([null, true]);
     if (!cardCounts[card.id]) cardCounts[card.id] = { count: 0, uniq: card.uniq, horde: card.horde };
     cardCounts[card.id].count += 1;
     if(card.type === 1) flyCost += card.cost;
@@ -285,6 +287,7 @@ function swapItems(drag_index, index) {
 
       <div class="decklist" class:tighter={grouppedCards.length > 21} class:tightest={grouppedCards.length > 25} use:shortcuts={{keyboard: true}} on:action:close={() => { if(!$popupStore.isOpen) { navigate('/app/decks') } } }>
          {#each grouppedCards as [card, count]}
+           {#if card}
            <div class={`card_line bg-${card.color} rarity-${card.rarity}`} use:shortcuts
                 on:action:preview={() => togglePopup(card, grouppedCards.map(group => group[0].id))} on:action:primary={()=> { dealCardClick(card.id) }}>
               <span class="count">
@@ -295,10 +298,12 @@ function swapItems(drag_index, index) {
                 {card.cost}
               </span>
            </div>
+           {/if}
          {/each}
         <p style="margin: 10px 0 10px 35px; font-size: 85%"><a use:shortcuts on:action:primary={()=> { show_other = !show_other }}>Остальные карты</a></p>
         {#if show_other}
           {#each grouppedDeck as [card, count]}
+             {#if card}
              <div class={`card_line bg-${card.color} rarity-${card.rarity}`} use:shortcuts
                   on:action:preview={() => togglePopup(card, grouppedDeck.map(group => group[0].id))} on:action:primary={()=> { otherCardClick(card.id) }}>
                 <span class="count">
@@ -309,6 +314,7 @@ function swapItems(drag_index, index) {
                   {card.cost}
                 </span>
              </div>
+             {/if}
           {/each}
          {/if}
       </div>
@@ -373,7 +379,7 @@ function swapItems(drag_index, index) {
           <span class="elite-gold" class:over={gold2<0}>{gold2}</span>
           <span class="elite-silver" class:over={silver2<0}>{silver2}</span>
         </span>
-        <h4><span>{byId(on_field_cards).reduce((acc, card) => { return acc + get_karapet_score(card.set_id, card.number) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
+        <h4><span>{byId(on_field_cards).filter((x) => x).reduce((acc, card) => { return acc + get_karapet_score(card.set_id, card.number) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
       </div>
     {/key}
 

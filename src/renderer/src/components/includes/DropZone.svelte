@@ -43,6 +43,16 @@
         isDraggingOver = false;
         const files = event.dataTransfer.files;
         Array.from(files).forEach((file) => {
+          if(file.name.endsWith('.brsl')) {
+            const reader = new FileReader()
+            reader.onload = (e) => {
+              navigate('/app/draft')
+              setTimeout(() => {
+                window.electron.ipcRenderer.send('start-draft', null, JSON.parse(e.target.result.toString()))
+              }, 50)
+            }
+            reader.readAsText(file)
+          }
           if(file.name.endsWith('.brsc') && confirm('Вы уверены, что хотите удалить текущую коллекцию и загрузить вместо неё новую?')){
             const reader = new FileReader();
             reader.onload = (e) => {

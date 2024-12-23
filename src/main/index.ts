@@ -53,6 +53,13 @@ const settings_store = new Store({
     },
     '1.2.10': (store) => {
       store.set("settings.other_options", {})
+    },
+    '1.4.7': (store) => {
+      if(!store.has("settings.draft_options.last_boosters")) store.set("settings.draft_options.last_boosters", null)
+      if(!store.has("settings.draft_options.replay")) store.set("settings.draft_options.replay", false)
+    },
+    '1.5.0': (store) => {
+      store.set("settings.draft_options.last_boosters", [null,null,null,null])
     }
   }
 })
@@ -275,6 +282,21 @@ app.whenReady().then(async () => {
         win.webContents.send('refresh', result, null);
       });
     }
+  })
+
+  ipcMain.on('save-draft', (event, _, draft, name) => {
+    exportDraft(draft, name)
+    event.returnValue = null
+  })
+
+  ipcMain.on('load-draft', (event) => {
+    event.returnValue = importDraft()
+  })
+
+  ipcMain.on('start-draft', (_event, _, result) => {
+    BrowserWindow.getAllWindows().forEach(win => {
+      win.webContents.send('start-draft', result);
+    });
   })
 
   createWindow()
@@ -822,6 +844,43 @@ function removeAddon(name) : void {
       app.relaunch()
       app.exit()
     }
+  }
+}
+
+function exportDraft(draft, name) {
+  dialog.showSaveDialog({
+    title: 'Сохранить драфт',
+    defaultPath: join(app.getPath('downloads'), name + '.brsl'),
+    buttonLabel: 'Сохранить',
+    filters: [{ name: 'Файл драфта', extensions: ['brsl'] }]
+  }).then(file => {
+    if (!file.canceled && file.filePath)
+      fs.writeFileSync(file.filePath.toString(), JSON.stringify(draft), 'utf-8');
+  }).catch(err => {
+    console.log(err);
+  });
+}
+
+function importDraft() {
+  try {
+    const filePaths = dialog.showOpenDialogSync({
+      title: 'Загрузить драфт',
+      properties: ['openFile'],
+      filters: [
+        { name: 'Файл драфта', extensions: ['brsl'] },
+      ],
+    });
+
+    if (!filePaths || filePaths.length === 0) return null;
+
+    const filePath = filePaths[0];
+    const rawData = fs.readFileSync(filePath, 'utf-8');
+    const data = JSON.parse(rawData);
+
+    return data;
+  } catch (err) {
+    console.error('Ошибка импорта драфта:', err);
+    return null;
   }
 }
 

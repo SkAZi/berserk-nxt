@@ -1,4 +1,4 @@
-import { readCollection, writeCollection, readDeck, readCompact, writeDeck, writeTTS } from '../../../renderer/src/utils/formats.js';
+import { readCollection, writeCollection, readDeck, readTTS, readCompact, writeDeck, writeTTS } from '../../../renderer/src/utils/formats.js';
 import { card_data } from './index.js';
 import { v4 } from 'uuid';
 import jpeg from 'jpeg-js';
@@ -78,7 +78,7 @@ export function exportDeck(deck, name, format) {
 export function importDeck() {
   const fileInput = document.createElement('input');
   fileInput.type = 'file';
-  fileInput.accept = '.brsd,.txt,.html,.jpg,.jpeg';
+  fileInput.accept = '.brsd,.txt,.html,.jpg,.jpeg,.json';
   fileInput.style.display = 'none';
 
   fileInput.onchange = event => {
@@ -122,7 +122,7 @@ export function importDeck() {
       } else {
         const data = e.target.result;
         try {
-          const [deckName, result] = readDeck(card_data, data)
+          const [deckName, result] = file.name.endsWith('.json') ? readTTS(card_data, data) : readDeck(card_data, data)
           window.electron.ipcRenderer.sendSync('new-deck', null, {id: v4(), name: deckName || fileName || "Новая колода", cards: result, date: Date.now(), tags: ['Импорт']});
         } catch (err) {
           console.error('Ошибка при чтении файла:', err);
@@ -148,6 +148,50 @@ export function exportDeckTTS(deck, name) {
 
   link.click();
 
-  document.body.removeChild(link);
-  URL.revokeObjectURL(link.href);
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
+
+export function exportDraft(draft, name) {
+  const blob = new Blob([JSON.stringify(draft)], { type: 'application/json;charset=utf-8' })
+
+  const link = document.createElement('a')
+  link.href = URL.createObjectURL(blob)
+  link.download = `${name}.brsl`
+  document.body.appendChild(link)
+  link.click()
+
+  document.body.removeChild(link)
+  URL.revokeObjectURL(link.href)
+}
+
+export function importDraft(callback) {
+  const fileInput = document.createElement('input')
+  fileInput.type = 'file'
+  fileInput.accept = '.brsl'
+  fileInput.style.display = 'none'
+
+  fileInput.onchange = (event) => {
+    const file = event.target.files[0]
+
+    if (!file) {
+      console.log('Файл не выбран')
+      return
+    }
+
+    const reader = new FileReader()
+    reader.onload = (e) => {
+      try {
+        const rawData = e.target.result
+        const draft = JSON.parse(rawData)
+        if (callback) callback(draft)
+      } catch (err) {
+        console.error('Ошибка при чтении или парсинге файла:', err)
+      }
+    };
+
+    reader.readAsText(file)
+  };
+
+  fileInput.click()
 }

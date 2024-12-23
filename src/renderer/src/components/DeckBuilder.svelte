@@ -82,7 +82,7 @@
 
   function count(deck_cards, key, value) {
     return deck_cards.reduce((acc, card_id) => {
-      return acc + ((byId(card_id)[key] === value) ? 1 : 0);
+      return acc + ((byId(card_id) && byId(card_id)[key] === value) ? 1 : 0);
     }, 0)
   }
 
@@ -262,17 +262,28 @@
     <div class="decklist" class:tighter={grouppedCards.length > 21} class:tightest={grouppedCards.length > 25}
         use:shortcuts={{keyboard: true}} on:action:number={setCount} on:action:close={() => { if(!$popupStore.isOpen && document.activeElement !== document.getElementById('search')){ navigate('/app/decks') } } } on:action:undo={doUndo}>
       {#each grouppedCards as [card, count]}
+        {#if card}
          <div data-cardid={card.id} class={`card_line bg-${card.color} rarity-${card.rarity}`} use:shortcuts={{keyboard: true}}
               on:action:minus={() => addOne(deck_id, card.altto || card.id)} on:action:primary={() => removeOne(deck_id, card.altto || card.id)}
               on:action:preview={() => togglePopup(card, grouppedCards.map(group => group[0].id))}>
             <span class="count">
               {#if count > 1}x<b style={(!card.horde && count > 3) || (card.horde && count > 6) ? "color: #D93526" : "color: #E0E3E7"}>{count}</b>{/if}
             </span>
-            <span class="card_name" style={card.ban ? "text-decoration: line-through" : ""}>{card.name}</span>
-            <span class="cost" class:elite={card.elite} class:uniq={card.uniq}>
-              {card.cost}
+            <span class="card_name" style={card?.ban ? "text-decoration: line-through" : ""}>{card?.name}</span>
+            <span class="cost" class:elite={card?.elite} class:uniq={card?.uniq}>
+              {card?.cost}
             </span>
          </div>
+         {:else}
+         <div data-cardid={count} class={`card_line bg-0 rarity-0`} use:shortcuts={{keyboard: true}}
+              on:action:primary={() => removeOne(deck_id, count)}>
+            <span class="count">
+              x<b style="color: #D93526">?</b>
+            </span>
+            <span class="card_name">[ОТСУТСТВУЕТ]</span>
+            <span class="cost">—</span>
+         </div>
+         {/if}
       {/each}
     </div>
     <div class="deck_stats">
@@ -305,6 +316,7 @@
   <section class="card-grid" style={`--card-min-size: ${$options.cardSize}px`} use:view_observer
       use:shortcuts on:action:zoomin={() => incSize('cardSize') } on:action:zoomout={() => decSize('cardSize')}>
     {#each $filteredSortedCards as card}
+      {#if card}
       <Card card={card}
         onpreview={togglePopup}
         onprimary={(card) => addOne(deck_id, card.altto || card.id)}
@@ -318,6 +330,7 @@
         draggable={false}
         card_list={$filteredSortedCards.map(card => card.id)}
      />
+      {/if}
     {/each}
   </section>
   {/if}
@@ -329,6 +342,7 @@
       <section id="deck-view" class="card-grid top-text-visible" style={`--card-min-size: ${$options.deckSize}px`}
            use:arrange use:shortcuts={{keyboard: true}} on:action:number={setCount} on:action:zoomin={() => incSize('deckSize') } on:action:zoomout={() => decSize('deckSize')}>
         {#each deckGroupped as [card, count]}
+          {#if card}
           <div use:sortable={{update: onDeckUpdate}}>
             <Card card={card}
               onpreview={togglePopup}
@@ -340,20 +354,21 @@
               showBan={false}
               showPrice={false}
               showTopText={Array.from({length: Math.min(count, 4)}, (_, i) => probability($user_decks['decks'][deck_id].cards.length, count, i+1)).join(" / ")}
-              card_list={deckGroupped.map(group => group[0].id)}
+              card_list={deckGroupped.map(group => group[0]?.id)}
             />
            </div>
+          {/if}
         {/each}
       </section>
       <hr />
       <div class="deck_stats">
         <span class="colors">{#each collectColors($user_decks['decks'][deck_id].cards) as color}<span class={`color color-${color}`}></span>{/each}</span>
         <h4 style="text-align: center">
-          <span style="font-size: 70%">LIF:</span> {byId($user_decks['decks'][deck_id].cards).reduce((acc, card) => { return acc + card['life'] || 0}, 0)}
+          <span style="font-size: 70%">LIF:</span> {byId($user_decks['decks'][deck_id].cards).filter((x) => x).reduce((acc, card) => { return acc + card.life || 0}, 0)}
           &nbsp; &nbsp;
-          <span style="font-size: 70%">ATK:</span> {byId($user_decks['decks'][deck_id].cards).reduce((acc, card) => { return (card['hit'] || [0,0,0]).map((num, index) => num + acc[index])}, [0,0,0]).join('-')}
+          <span style="font-size: 70%">ATK:</span> {byId($user_decks['decks'][deck_id].cards).filter((x) => x).reduce((acc, card) => { return (card.hit || [0,0,0]).map((num, index) => num + acc[index])}, [0,0,0]).join('-')}
         </h4>
-        <h4 style="text-align: right;"><span>{byId($user_decks['decks'][deck_id].cards).reduce((acc, card) => { return acc + get_karapet_score(card.set_id, card.number) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
+        <h4 style="text-align: right;"><span>{byId($user_decks['decks'][deck_id].cards).filter((x) => x).reduce((acc, card) => { return acc + get_karapet_score(card.set_id, card.number) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
       </div>
      </div>
     {/key}

@@ -69,7 +69,8 @@ export const default_draft_options = {
   boosters: [],
   own_cards: [],
   side: [],
-  draft_id: null
+  draft_id: null,
+  last_boosters: null
 }
 
 export const default_deal_options = {

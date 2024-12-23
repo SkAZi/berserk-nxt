@@ -255,6 +255,11 @@ main > aside.right .decklist.tighter.tightest .card_line .cost{
   font-size: 100%;
 }
 
+main > aside.right .decklist .bg-0 .card_name{
+  background-image: url(./img/bg-0.png);
+  color: #D93526;
+  text-shadow: 1px 0 0 #333C4E;
+}
 main > aside.right .decklist .bg-1 .card_name{
   background-image: url(./img/bg-1.png);
 }
@@ -1095,6 +1100,8 @@ section.card-grid h3{
 .draft_form {
   max-width: 700px;
   margin: 0 auto;
+  position: relative;
+  z-index: 1;
 }
 
 .card-grid .neodrag-dragging {
@@ -1498,4 +1505,35 @@ section.card-grid h3{
   100% {
     background-position: 200% 50%;
   }
+}
+
+
+
+#app.ellion {
+    background: url(./img/ellion_bg.jpg) no-repeat center center;
+    background-size: cover;
+}
+
+#ellion {
+    cursor: pointer;
+    top: 5px;
+    left: -2%;
+    position: absolute;
+    width: 29%;
+    height: 800px;
+    background: url(./img/ellion.png) no-repeat center center;
+    background-size: contain;
+    z-index: 0;
+}
+
+#ellion-text {
+    cursor: pointer;
+    top: 30px;
+    right: 0;
+    position: absolute;
+    width: 23%;
+    height: 800px;
+    background: url(./img/ellion_text.png) no-repeat center center;
+    background-size: contain;
+    z-index: 0;
 }

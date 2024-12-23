@@ -112,14 +112,14 @@
             && ($options.rarities.length == 0 || $options.rarities.includes(card.rarity.toString()))
             && ($options.colors.length == 0 || $options.colors.includes(card.color.toString()))
             && ($options.creature_types.length == 0 || $options.creature_types.includes(card.type.toString()))
-            && ($options.collection_alts.length == 0 || $options.collection_alts.includes(card.alt) || ($options.collection_alts.includes("promo") && (card.promo === true || ["alt","altf","pf","altpf","fpf","altfpf"].includes(card.alt) )))
+            && ($options.collection_alts.length == 0 || $options.collection_alts.includes(card.alt) || ($options.collection_alts.includes("alt") && card.alt.startsWith("alt_")) || ($options.collection_alts.includes("promo") && (card.promo === true || ["alt","altf","pf","altpf","fpf","altfpf"].includes(card.alt) )))
             && ($options.moves.length == 0 || $options.moves.includes((card.move || 0).toString()))
             && ($options.min_hits.length == 0 || $options.min_hits.includes((card.hit ? card.hit[0] || 0 : 0).toString()))
             && ($options.mid_hits.length == 0 || $options.mid_hits.includes((card.hit ? card.hit[1] || 0 : 0).toString()))
             && ($options.max_hits.length == 0 || $options.max_hits.includes((card.hit ? card.hit[2] || 0 : 0).toString()))
             && ($options.lifes.length == 0 || $options.lifes.includes((card.life || 0).toString()))
             && ($options.costs.length == 0 || $options.costs.includes(card.cost.toString()))
-            && ($options.classes.length == 0 || $options.classes.some((x) => card.class.includes(x) ))
+            && ($options.classes.length == 0 || $options.classes.some((x) => card.class.includes(x) ) || ($options.classes.includes('Герой') && ((card.class[0] || '').startsWith('Герой') || (card.class[1] || '').startsWith('Герой'))))
             && ($options.icons.length == 0 || $options.icons.some((slug) => {
               if (slug === 'uniq') return card.uniq;
               if (slug === 'nuniq') return !card.uniq;

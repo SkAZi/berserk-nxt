@@ -1,7 +1,7 @@
 import { Store } from './store.js';
 
 import { default_settings } from '../../../renderer/src/stores/defaults.js';
-import { newCollection, saveCollection, loadCollection, exportDeck, importDeck, exportDeckTTS, resetSelected } from './files.js';
+import { newCollection, saveCollection, loadCollection, exportDeck, importDeck, exportDeckTTS, resetSelected, exportDraft, importDraft } from './files.js';
 
 import cardConst from '../../../../resources/const.json';
 import cardsStore from '../../../../resources/data.json';
@@ -161,6 +161,13 @@ const stores = {
       '1.2.10': (store) => {
         store.set("settings.other_options", {})
       },
+      '1.4.7': (store) => {
+        if(!store.has("settings.draft_options.last_boosters")) store.set("settings.draft_options.last_boosters", null)
+        if(!store.has("settings.draft_options.replay")) store.set("settings.draft_options.replay", null)
+      },
+      '1.5.0': (store) => {
+        store.set("settings.draft_options.last_boosters", [null,null,null,null])
+      }
     }
   })
 };
@@ -221,10 +228,20 @@ window.electron.ipcRenderer.on('load-collection', (result, reset, minus) => {
 })
 
 window.electron.ipcRenderer.on('print-decklists', (data) => {
-  console.log(data);
-  let w = window.open();
-  w.document.write(data);
-  w.document.close();
-  w.print();
-  w.close();
+  console.log(data)
+  let w = window.open()
+  w.document.write(data)
+  w.document.close()
+  w.print()
+  w.close()
+})
+
+window.electron.ipcRenderer.on('save-draft', (_event, draft, name) => {
+  return exportDraft(draft, name)
+})
+
+window.electron.ipcRenderer.on('load-draft', async () => {
+  importDraft((result) => {
+    window.electron.ipcRenderer.send('start-draft', null, result)
+  })
 })
