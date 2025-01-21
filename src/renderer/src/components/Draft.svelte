@@ -32,8 +32,7 @@
   const options_name = 'draft_options'
   let draft = option_set[options_name]
 
-  let deck_name
-  $: deck_name = `${$draft.variant === 'draft' ? 'Драфт' : 'Силед'} от ${formatCurrentDate()}`
+  let deck_name = ""
 
   let userMethod = '{"10":[],"20":[],"30":[]}'
   let parsedUserMetod = {}
@@ -129,6 +128,7 @@
 
   function beginDraft() {
     setSecondLevelMenu({ 'Прервать турнир': stopDraft })
+    deck_name = `${$draft.variant === 'draft' ? 'Драфт' : 'Силед'} от ${formatCurrentDate()}`
     draft.update((draft) => {
       draft.current_booster = -1
       if (draft.variant === 'draft') {
@@ -203,6 +203,19 @@
     return [boosters, draft.current_booster, last_boosters]
   }
 
+  async function sendPickToServer(pickData) {
+    try {
+      const response = await fetch('https://berserk-nxt.ru/api/pick', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(pickData)
+      })
+      if (!response.ok) console.error('Ошибка при отправке пика:', response.statusText)
+    } catch (err) {
+      console.error('Ошибка сети или fetch:', err)
+    }
+  }
+
   function boosterCardClick(index) {
     draft.update((draft) => {
       let step = draft.step
@@ -212,6 +225,14 @@
       let own_cards = [...draft.own_cards]
       let side = [...draft.side]
       let last_boosters = draft.last_boosters
+
+      sendPickToServer({
+        draft_id: draft.draft_id,
+        card_id: parseInt(picked_card) % 1000,
+        card_set: Math.floor(parseInt(picked_card) / 1000),
+        booster_index: current_booster + 1,
+        pick: 12 - boosters[0].length
+      })
 
       for (let i = 1; i < draft.players; i++)
         boosters[i].splice(

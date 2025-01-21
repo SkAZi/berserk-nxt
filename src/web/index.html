@@ -5,7 +5,13 @@
     <title>ККИ Берсерк Nxt</title>
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data: https://mc.yandex.ru" />
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: https://mc.yandex.ru;
+        connect-src 'self' https://berserk-nxt.ru/ https://mc.yandex.ru
+      " />
     <meta name="viewport" content="user-scalable=no" />
     <link rel="manifest" href="/manifest.json" />
   </head>

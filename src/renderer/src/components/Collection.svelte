@@ -13,7 +13,8 @@
   const options_name = 'collection_options';
   let options = option_set[options_name];
 
-  let cardsize;
+  let cardsize
+  // @ts-ignore
   $: cardsize && cardsize.style.setProperty('--card-min-size', `${$options.cardSize}px`);
 
   onMount(() => {

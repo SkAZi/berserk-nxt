@@ -5,10 +5,15 @@
     <title>ККИ Берсерк Nxt</title>
     <meta
       http-equiv="Content-Security-Policy"
-      content="default-src 'self'; script-src 'self'; style-src 'self' 'unsafe-inline'; img-src 'self' data:"
-    />
+      content="
+        default-src 'self';
+        script-src 'self';
+        style-src 'self' 'unsafe-inline';
+        img-src 'self' data: https://mc.yandex.ru;
+        connect-src 'self' https://berserk-nxt.ru/
+      " />
   </head>
 
   <body id="app" data-theme="dark"></body>
-  <script type="module" src="/src/main.ts"></script>                 
+  <script type="module" src="/src/main.ts"></script>
 </html>

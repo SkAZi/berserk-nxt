@@ -117,7 +117,7 @@ export function readTTS(card_data, input) {
 }
 
 export function writeTTS(deck, options) {
-  const {path, suffix, sets, rarity, color, root_base, custom_view, deck_base, card_base} = options;
+  const {path, suffix, sets, rarity, color, root_base, custom_view, deck_base, card_base, creature_types} = options;
 
   function GUID() {
     return Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
@@ -160,7 +160,7 @@ export function writeTTS(deck, options) {
     card_view["GUID"] = GUID()
     card_view["CardID"] = getId(card)
     card_view["Nickname"] = card.name
-    card_view["Tags"] = [rarity[`${card.rarity}`], color[`${card.color}`], sets[`${card.set_id}`]]
+    card_view["Tags"] = ['Card', rarity[`${card.rarity}`], color[`${card.color}`], sets[`${card.set_id}`], creature_types[`${card.type}`], `Cost_${card.cost}`, `Elite_${card.elite}`, `Uniq_${card.uniq}`]
     const view = fastCopy(custom_view)
     view["FaceURL"] = getURL(card, path)
     view["BackURL"] = path + 'back.jpg'
