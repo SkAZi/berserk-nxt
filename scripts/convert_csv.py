@@ -89,7 +89,7 @@ with open('alts.json', 'r') as f:
     alts_data = json.load(f)
 
 # Загрузка данных из CSV файла
-df = pd.read_csv('4set.csv', sep=',')
+df = pd.read_csv('5set.csv', sep=',')
 
 # Преобразование данных
 json_lines = []
@@ -97,10 +97,10 @@ for index, row in df.iterrows():
     if not pd.notna(row['name']):
         continue
     icons = process_icons(row)
-    fullid = f"{40*1000 + int(row['number'])}"
+    fullid = f"{50*1000 + int(row['number'])}"
     card = {
         "id": fullid,
-        "set_id": 40,
+        "set_id": 50,
         "number": int(row['number']),
         "name": row['name'],
         "rarity": int(row['rarity']),
@@ -108,23 +108,24 @@ for index, row in df.iterrows():
         "elite": bool(int(row['elite']) if pd.notna(row['elite']) else 0),
         "uniq": bool(int(row['uniq']) if pd.notna(row['uniq']) else 0),
         "color": int(row['color']),
-        "class": str(row['class']).split('.') if pd.notna(row['class']) else [""],
+        "class": [s.strip() for s in str(row['class']).split('.')] if pd.notna(row['class']) else [""],
         "type": int(row['type']) - 1,
         "life": int(row['life']) if pd.notna(row['life']) else None,
         "move": int(row['move']) if pd.notna(row['move']) else None,
-        "hit": [int(x) for x in row['hit'].split('-')] if '-' in row['hit'] else None,
+        "hit": [int(x) for x in row['hit'].split('-')] if pd.notna(row['hit']) and '-' in row['hit'] else None,
         "horde": bool(int(row['horde']) if pd.notna(row['horde']) else 0),
         "icons": icons,
         "art": row['artist'],
         "tokens": process_tokens(row, icons),
         "prints": {},
-        "alts": ["alt"] if fullid in alts_data["alt"] else [],
+        "alts": [], #["alt"] if fullid in alts_data["alt"] else [],
         "alt": "",
         "altto": None
     }
     print(', ' + json.dumps(card, ensure_ascii=False, separators=(',', ':')))
-    if fullid in alts_data["alt"]:
-        card["id"] = fullid + "alt"
-        card["alt"] = "alt"
-        card["altto"] = fullid
-        print(', ' + json.dumps(card, ensure_ascii=False, separators=(',', ':')))
+    #print(f"cp {card["number"]}.jpg 1")
+    # if fullid in alts_data["alt"]:
+    #     card["id"] = fullid + "alt"
+    #     card["alt"] = "alt"
+    #     card["altto"] = fullid
+    #     print(', ' + json.dumps(card, ensure_ascii=False, separators=(',', ':')))

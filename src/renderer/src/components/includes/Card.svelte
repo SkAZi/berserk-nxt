@@ -101,7 +101,7 @@
       <div class:count_copies={countCopies ? (copies - index) > card.user_total_count : false}>
         <img
           src={`${resoucesPath}/cards/${card.set_id}/${card.number}${art_suffix[card.alt] !== undefined ? art_suffix[card.alt] : card.alt}.jpg`}
-          alt="&nbsp;"
+          alt={card.number}
           loading="lazy"
           width="992"
           height="1400"

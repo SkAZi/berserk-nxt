@@ -353,6 +353,14 @@ if(process.platform === 'darwin') {
     label: 'Правка',
     role: 'editMenu'
   });
+
+  menuTemplate.push({
+   label: "Тестирование",
+   submenu: [
+     { label: 'Обновить приложение', role: 'reload' },
+     { label: 'Открыть DevTools', role: 'toggleDevTools' },
+   ]
+  });
 }
 //else
 //menuTemplate.push({
@@ -732,8 +740,10 @@ function exportDeckTTS(deck, name) {
   }).then(file => {
     if (!file.canceled) {
       const content = writeTTS(deck, card_const['tts_options']);
-      if(file.filePath)
+      if(file.filePath) {
         fs.writeFileSync(file.filePath.toString(), content, 'utf-8');
+        fs.copyFileSync(join(resources_path, 'back.png'), file.filePath.replace(/\.json$/, '.png'));
+      }
     }
   }).catch(err => {
     console.log(err);

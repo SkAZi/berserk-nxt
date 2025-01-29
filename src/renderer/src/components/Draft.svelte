@@ -205,7 +205,7 @@
 
   async function sendPickToServer(pickData) {
     try {
-      const response = await fetch('https://berserk-nxt.ru/api/pick', {
+      const response = await fetch('https://berserk-nxt.ru/api/draft', {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pickData)
@@ -221,6 +221,7 @@
       let step = draft.step
       let current_booster = draft.current_booster
       let boosters = draft.boosters
+      const booster = [...boosters[0]]
       let [picked_card] = boosters[0].splice(index, 1)
       let own_cards = [...draft.own_cards]
       let side = [...draft.side]
@@ -228,15 +229,14 @@
 
       sendPickToServer({
         draft_id: draft.draft_id,
-        card_id: parseInt(picked_card) % 1000,
-        card_set: Math.floor(parseInt(picked_card) / 1000),
-        booster_index: current_booster + 1,
-        pick: 12 - boosters[0].length
+        context: own_cards,
+        options: booster,
+        choice: picked_card
       })
 
       for (let i = 1; i < draft.players; i++)
         boosters[i].splice(
-          doPick(byId(boosters[i]), draft.method, draft.user_method || '{"10":[],"20":[],"30":[]}'),
+          doPick(byId(boosters[i]), draft.method, draft.user_method || '{"10":[],"20":[],"30":[],"40":[],"50":[]}'),
           1
         )
 
@@ -287,7 +287,7 @@
   function saveDeck(name, cards, deal) {
     user_decks.update(($user_decks) => {
       setDeckId(0)
-      if ($draft.draft_id && $draft.draft_id !== $user_decks.decks[0].id)
+      if ($draft.draft_id && (!$user_decks.decks.length || $draft.draft_id !== $user_decks.decks[0].id))
         return {
           ...$user_decks,
           decks: [
@@ -495,7 +495,7 @@
               >
                 {#if index}<option value=""></option>{/if}
                 {#each Object.entries(sets) as [key, set_name]}
-                  {#if parseInt(key) % 10 == 0}
+                  {#if parseInt(key) % 10 == 0 && parseInt(key) != 50}
                     <option value={key}>{set_name}</option>
                   {/if}
                 {/each}
@@ -705,8 +705,8 @@
               class="outline"
               style="padding: 5px; height: 45px;  margin-left: 10px;"
               disabled={$draft.own_cards.length === 0}
-              on:click={() => {
-                takeScreenshot('#own-cards', deck_name, groupCards($draft.own_cards, 'asis'))
+              on:click={(e) => {
+                takeScreenshot('#own-cards', deck_name, groupCards($draft.own_cards, 'asis'), "", e.shiftKey)
               }}
             >
               <svg width="32" height="32" viewBox="0 0 192 192" fill="none"

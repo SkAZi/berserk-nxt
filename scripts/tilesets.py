@@ -43,5 +43,5 @@ def create_tilesets(folder_path):
         result_image.save(f'{folder_name}-{page_num+1}.jpg', quality=95)
 
 # Путь к папке с картинками
-for folder_path in ['../src/renderer/cards/40']:
+for folder_path in ['../src/renderer/cards/50']:
     create_tilesets(folder_path)

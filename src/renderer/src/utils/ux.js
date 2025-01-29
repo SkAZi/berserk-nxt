@@ -2,13 +2,13 @@ import html2canvas from 'html2canvas';
 import QRCode from 'qrcode';
 import { writeCompact } from './formats.js'
 
-export function takeScreenshot(selector, name, data = null, suffix = "") {
+export function takeScreenshot(selector, name, data = null, suffix = "", clipboard = false) {
   const node = document.querySelector(selector).cloneNode(true);
   const len = Array.from(node.childNodes).length
   node.style.background = '#2a3140';
   node.style.padding = '16px 16px 0'
   node.style.marginTop = '1000px'
-  node.style.width = len < 20 ? '800px' : (len <= 30 ? '900px' : '1280px')
+  node.style.width = len < 20 ? '800px' : (len <= 30 ? '900px' : '1140px')
   node.style.setProperty('--card-min-size', '120px')
   node.classList.add('print')
   const header = document.createElement('h3');
@@ -35,14 +35,25 @@ export function takeScreenshot(selector, name, data = null, suffix = "") {
     Array.from(node.querySelectorAll('.sortable')).forEach((el) => el.style.height = '')
     document.body.appendChild(node);
     html2canvas(node).then(canvas => {
-      document.body.removeChild(node);
-      const dataURL = canvas.toDataURL("image/jpeg", 0.85);
-      const link = document.createElement('a');
-      link.download = name + suffix + '.jpg';
-      link.href = dataURL;
-      document.body.appendChild(link);
-      link.click();
-      document.body.removeChild(link);
+      if(clipboard) {
+        canvas.toBlob((blob) => {
+          if (blob) {
+            const clipboardItem = new ClipboardItem({ 'image/png': blob });
+            navigator.clipboard.write([clipboardItem])
+              .then(() => console.log('Скриншот сохранен в буфер обмена'))
+              .catch(err => console.error('Ошибка при сохранении в буфер обмена:', err));
+          }
+        }, 'image/png');
+      } else {
+        document.body.removeChild(node);
+        const dataURL = canvas.toDataURL("image/jpeg", 0.9);
+        const link = document.createElement('a');
+        link.download = name + suffix + '.jpg';
+        link.href = dataURL;
+        document.body.appendChild(link);
+        link.click();
+        document.body.removeChild(link);
+      }
     })
   })
 }
