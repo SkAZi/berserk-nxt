@@ -5,7 +5,7 @@
   import { quintOut } from 'svelte/easing';
   import { shortcuts } from '../../utils/shortcuts.js';
 
-  import { cardsStore, orders, sets, rarities, colors, eliteness, creature_types, collection_counts, classes, costs, moves, lifes, offitial_alternatives, min_hits, mid_hits, max_hits, icons } from '../../stores/cards.js';
+  import { byId, cardsStore, orders, sets, rarities, colors, eliteness, creature_types, collection_counts, classes, costs, moves, lifes, offitial_alternatives, min_hits, mid_hits, max_hits, icons } from '../../stores/cards.js';
   import { filterAside, showStats, popupStore } from '../../stores/interface.js';
   import { default_settings } from '../../stores/defaults.js';
   import { user_cards, user_decks, settings, featured, option_set, settings_loaded, filteredSortedCards } from '../../stores/user_data.js';
@@ -13,6 +13,8 @@
 
   export let options_name = '';
   export let noSide = false
+  export let currentDeck = []
+  export let currentDeckName = "Неизвестный пул"
 
   let options = option_set[options_name];
   let searchQuery = '';
@@ -83,11 +85,31 @@
     })
   }
 
+  function handleSetPool(event){
+    const { checked } = event.target;
+    if(checked) {
+      options.set({...get(options), useCardPool: true, cardPoolName: currentDeckName, cardPool: [...currentDeck]})
+      //console.log(get(options))
+    } else {
+      options.set({...get(options), useCardPool: false, cardPoolName: null, cardPool: []})
+    }
+  }
+
+  function subtractArrays(arr1, arr2) {
+    const result = [...arr1];
+    for (const elem of arr2) {
+      const index = result.indexOf(elem);
+      if (index !== -1) result.splice(index, 1);
+    }
+    return result;
+  }
+
 
   $: {
     let tokens = tokenizer($options.searchQuery)
-    filteredSortedCards.set(cardsStore
-      .map(card => {
+    let pool = $options.useCardPool ? byId(subtractArrays($options.cardPool, currentDeck)) : cardsStore
+    filteredSortedCards.set(
+      pool.map(card => {
         card.user_count = $user_cards[card.id] ? ($user_cards[card.id].count[""] || 0) : 0
         card.user_total_count = (card.alts || []).reduce((acc, alt) => acc + ($user_cards[card.id + alt] ? ($user_cards[card.id + alt].count[""] || 0) : 0), card.user_count)
         card.user_price = ($user_cards[card.id] && $user_cards[card.id].costs) ? ($user_cards[card.id].costs[""] || 0) : 0
@@ -96,7 +118,7 @@
       .filter(card => {
         const filter_base_result = ($options.searchQuery === ''
               || card.number.toString() === $options.searchQuery?.toLowerCase()
-              || card.tokens.includes(tokens.join(' '))
+              || card.tokens.includes(' ' + tokens.join(' '))
             )
             && (!$options.featuredOnly || $featured[''].includes(card.id))
             && (!$options.onlyWithCost || card.user_price > 0)
@@ -126,6 +148,9 @@
               let [x, n] = slug.split("=")
               return x in card.icons && (n === undefined || card.icons[x].toString() === n)
             }))
+            // LDB
+            // && (!$options.ldb || $options.ldb.length == 0 || $options.ldb.every(letter => !card.name.toUpperCase().replace('Ё','Е').includes(letter)))
+
 
         return filter_base_result && ($options.filterNot ? !filter_result : filter_result)
       })
@@ -134,7 +159,7 @@
           case 'num': return $options.sortAsc * (a.set_id * 1000 + a.number - (b.set_id * 1000 + b.number));
           case 'color': return $options.sortAsc * (a.color * 1000 + a.set_id - (b.color * 1000 + b.set_id));
           case 'rarity': return $options.sortAsc * (b.rarity * 1000 - b.color - (a.rarity * 1000 - a.color));
-          case 'cost': return $options.sortAsc * (a.cost - b.cost);
+          case 'cost': return $options.sortAsc * (a.cost * 1000 + a.color * 10 + Number(a.elite) - (b.cost * 1000 + b.color * 10 + Number(b.elite)));
           case 'name': return $options.sortAsc * (a.name.localeCompare(b.name));
           case 'life': return $options.sortAsc * (a.life - b.life);
           case 'price':
@@ -164,17 +189,23 @@
     <input type="search" id="search" use:shortcuts={{keyboard: true}} on:action:find={(e)=> { e.target.focus() }} on:action:close={()=> { if(!$popupStore.isOpen) options.set({...$options, searchQuery: ""}) }} class="driver-search" name="search" placeholder="Поиск..." bind:value={searchQuery} tabindex="0" />
     <fieldset on:change="{handleOrderChange}" class="driver-sort">
     {#each Object.keys(orders) as val}
+      {#if val !== 'price' || options_name !== 'deckbuilding_options'}
       <label>
         <input type="radio" name="order" on:click="{handleOrderChange}" value="{val}" checked={$options.sortOrder === val} />
         {orders[val]}{#if $options.sortOrder === val}&nbsp;&nbsp;{#if $options.sortAsc === 1}&darr;{:else}&uarr;{/if}{/if}
       </label>
+      {/if}
     {/each}
     </fieldset>
     <fieldset class="driver-filter">
         <label><input type="checkbox" bind:checked={$options.featuredOnly} tabindex="0" /> Избранное</label>
         <label><input type="checkbox" bind:checked={$options.showSelected} tabindex="0" /> В наличии</label>
         <label><input type="checkbox" bind:checked={$options.onlyBase} tabindex="0" /> Суммарно</label>
-        <label><input type="checkbox" bind:checked={$options.onlyWithCost} tabindex="0" /> Только с ценой</label>
+        {#if options_name != 'deckbuilding_options'}
+          <label><input type="checkbox" bind:checked={$options.onlyWithCost} tabindex="0" /> Только с ценой</label>
+        {:else}
+          <label><input type="checkbox" on:change={(e) => { handleSetPool(e) }} checked={$options.useCardPool} tabindex="0" /> {#if $options.useCardPool}[{$options.cardPoolName}]{:else}Назначить как пул{/if}</label>
+        {/if}
     </fieldset>
     <div class="driver-other-filter">
     <p><a class="force-shortcuts" use:shortcuts on:action:primary={resetFilters} tabindex="0">Сбросить фильтры</a></p>
@@ -293,7 +324,7 @@
       <summary>Свойства</summary>
       <fieldset on:change="{(e) => { handleFilterChange(e, 'icons') }}">
         {#each Object.keys(icons) as val}
-          <label><input type="checkbox" name="class" value="{val}" checked={$options.icons?.indexOf(val) >= 0} tabindex="0" />{icons[val]}</label>
+          <label><input type="checkbox" name="icons" value="{val}" checked={$options.icons?.indexOf(val) >= 0} tabindex="0" />{icons[val]}</label>
         {/each}
        </fieldset>
     </details>

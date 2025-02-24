@@ -14,6 +14,8 @@ export const api = {
   resoucesPath: resourcesPath
 };
 
+window.isWeb = true
+
 export const electron = {
   ipcRenderer: (function() {
     const listeners = new Map();
@@ -167,6 +169,19 @@ const stores = {
       },
       '1.5.0': (store) => {
         store.set("settings.draft_options.last_boosters", [null,null,null,null])
+      },
+      '1.6.5': (store) => {
+        if(!store.has("settings.collection_options.ldb")) store.set("settings.collection_options.ldb", [])
+        if(!store.has("settings.deckbuilding_options.ldb")) store.set("settings.deckbuilding_options.ldb", [])
+      },
+      '1.7.1': (store) => {
+        if(!store.has("settings.deckbuilding_options.useCardPool")) store.set("settings.deckbuilding_options.useCardPool", false)
+        if(!store.has("settings.deckbuilding_options.cardPoolName")) store.set("settings.deckbuilding_options.cardPoolName", "")
+        if(!store.has("settings.deckbuilding_options.cardPool")) store.set("settings.deckbuilding_options.cardPool", [])
+      },
+      '1.7.4': (store) => {
+        if(!store.has("settings.draft_options.their_cards")) store.set("settings.deckbuilding_options.their_cards", Array.from({ length: 16 }, () => []))
+        if(!store.has("settings.draft_options.look_at")) store.set("settings.deckbuilding_options.look_at", null)
       }
     }
   })
@@ -197,8 +212,8 @@ window.electron.ipcRenderer.on('set-data', (key, value) => {
 });
 
 
-window.electron.ipcRenderer.on('save-deck', (deck, name, type) => {
-  if(type === 'tts') exportDeckTTS(deck, name)
+window.electron.ipcRenderer.on('save-deck', (deck, name, type, deck_type) => {
+  if(type === 'tts') exportDeckTTS(deck, name, deck_type)
   else exportDeck(deck, name, type)
 });
 

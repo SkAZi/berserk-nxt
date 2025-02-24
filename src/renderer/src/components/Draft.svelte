@@ -2,6 +2,7 @@
   import { v4 } from 'uuid'
   import { onMount } from 'svelte'
   import { navigate } from '@jamen/svelte-router'
+  import { toast } from '@zerodevx/svelte-toast'
   import { sortable } from '../utils/sortable.js'
   import { takeScreenshot } from '../utils/ux.js'
   import { cardsStore } from '../stores/cards.js'
@@ -11,7 +12,8 @@
     togglePopup,
     setSecondLevelMenu,
     setDeckId,
-    loader
+    loader,
+    awaiter
   } from '../stores/interface.js'
   import { shortcuts } from '../utils/shortcuts.js'
   import { draft_driver } from '../stores/help.js'
@@ -19,6 +21,7 @@
   import {
     getBooster,
     doPick,
+    doAIPick,
     formatCurrentDate,
     validUserWeights,
     get_karapet_score,
@@ -33,10 +36,14 @@
   let draft = option_set[options_name]
 
   let deck_name = ""
+  let lock_click = false
 
-  let userMethod = '{"10":[],"20":[],"30":[]}'
+  let userMethod = null
   let parsedUserMetod = {}
   $: parsedUserMetod = validUserWeights(userMethod) ? JSON.parse(userMethod) : {}
+
+  let visible_deck = []
+  $: visible_deck = ($draft.look_at === null || $draft.look_at === undefined) ? $draft.own_cards.filter((x) => x) : $draft.their_cards[$draft.look_at].filter((x) => x)
 
   onMount(() => {
     if ($draft.step > 0) {
@@ -61,6 +68,7 @@
       replayDraft(null, draft_data)
     })
     loader.set(false)
+    awaiter.set({ awaiting: {} })
     return () => {
       loader.set(true)
       setSecondLevelMenu()
@@ -77,7 +85,7 @@
       settings.update(($settings) => {
         return { ...$settings, draft_options: $draft }
       })
-    userMethod = $draft.user_method || '{"10":[],"20":[],"30":[]}'
+    userMethod = $draft.user_method
   })
 
   function updateUserMethod() {
@@ -118,16 +126,20 @@
           current_booster: 0,
           own_cards: [],
           side: [],
+          look_at: null,
+          their_cards: Array.from({ length: boosters.length-1 }, () => []),
           last_boosters: draft.last_boosters,
           replay: true
         }
       }
       return draft
     })
+    doIAMagic()
   }
 
   function beginDraft() {
     setSecondLevelMenu({ 'Прервать турнир': stopDraft })
+    awaiter.set({ awaiting: {} })
     deck_name = `${$draft.variant === 'draft' ? 'Драфт' : 'Силед'} от ${formatCurrentDate()}`
     draft.update((draft) => {
       draft.current_booster = -1
@@ -141,6 +153,8 @@
           current_booster,
           own_cards: [],
           side: [],
+          their_cards: Array.from({ length: boosters.length-1 }, () => []),
+          look_at: null,
           last_boosters,
           replay: false
         }
@@ -156,11 +170,14 @@
           current_booster: -1,
           own_cards: [],
           side: boosters.flat(),
+          their_cards: [],
+          look_at: null,
           last_boosters: null,
           replay: false
         }
       }
     })
+    doIAMagic()
   }
 
   function continueDraft() {
@@ -171,8 +188,10 @@
   }
 
   function stopDraft() {
+    toast.pop(0)
     setSecondLevelMenu()
     setup({ step: 0 })
+    awaiter.set({ awaiting: {} })
   }
 
   function generateBoosters(draft, last_boosters) {
@@ -204,8 +223,9 @@
   }
 
   async function sendPickToServer(pickData) {
+    if($draft.variant !== 'draft' && $draft.show_score !== '1') return
     try {
-      const response = await fetch('https://berserk-nxt.ru/api/draft', {
+      const response = await fetch(`https://berserk-nxt.ru/api/draft${$draft.show_score === '2' ? '_good' : ''}`, {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify(pickData)
@@ -216,49 +236,98 @@
     }
   }
 
-  function boosterCardClick(index) {
-    draft.update((draft) => {
-      let step = draft.step
-      let current_booster = draft.current_booster
-      let boosters = draft.boosters
-      const booster = [...boosters[0]]
-      let [picked_card] = boosters[0].splice(index, 1)
-      let own_cards = [...draft.own_cards]
-      let side = [...draft.side]
-      let last_boosters = draft.last_boosters
+  async function doIAMagic(){
+    if($draft.variant !== 'draft' || $draft.show_score !== '1') return
+    if(!$draft.boosters[0] || $draft.boosters[0].length < 1) return
+    try {
+      const booster = [...$draft.boosters[0]]
+      toast.pop(0)
+      let message = []
+      if($settings['other_options']?.ai){
+        const tugodum = await doAIPick($draft.own_cards, byId(booster))
+        message.push(`Тугодум AI: <b>${byId(booster[tugodum])['name']}</b>`)
+      }
+      message.push(`Статистика MotD: <b>${byId(booster[doPick(byId(booster), 'motd2')])['name']}</b>`)
+      message.push(`Модель Карапета: <b>${byId(booster[doPick(byId(booster), 'karapet')])['name']}</b>`)
+      toast.push(message.join('<br />'), {initial: 0})
+    } catch (err) {
+      console.error('Ошибка сети или fetch:', err)
+    }
+  }
 
-      sendPickToServer({
-        draft_id: draft.draft_id,
-        context: own_cards,
-        options: booster,
-        choice: picked_card
+  function createBotMap(size) {
+    const map = {};
+    for (let i = 0; i < size; i++) {
+      map[i] = `Бот ${i + 1}`;
+    }
+    return map;
+  }
+
+  async function boosterCardClick(index) {
+    if(lock_click) return
+    lock_click = true
+
+    let step = $draft.step
+    let current_booster = $draft.current_booster
+    let boosters = $draft.boosters
+    const booster = [...boosters[0]]
+    let [picked_card] = boosters[0].splice(index, 1)
+    let own_cards = [...$draft.own_cards]
+    let side = [...$draft.side]
+    let last_boosters = $draft.last_boosters
+    let their_cards = JSON.parse(JSON.stringify($draft.their_cards))
+
+    awaiter.set({...awaiter, awaiting: createBotMap($draft.players-1)})
+    sendPickToServer({
+      draft_id: $draft.draft_id,
+      context: own_cards,
+      options: booster,
+      choice: picked_card
+    })
+
+    await Promise.all(
+      Array.from({ length: $draft.players - 1 }).map((_, idx) => {
+        const i = idx + 1;
+        return (async () => {
+          let pick_index = ($draft.method === 'ai')
+              ? await doAIPick(their_cards[i - 1], byId(boosters[i]), 500)
+              : doPick(byId(boosters[i]), $draft.method, $draft.user_method)
+          const [pick_card] = boosters[i].splice(pick_index, 1)
+          their_cards[i - 1].push(pick_card)
+          awaiter.update((awaiter) => {
+            delete awaiter.awaiting[i - 1]
+            if (Object.keys(awaiter.awaiting).length === 0) lock_click = false
+            return { ...awaiter, awaiting: { ...awaiter.awaiting } }
+          })
+        })()
       })
+    )
 
-      for (let i = 1; i < draft.players; i++)
-        boosters[i].splice(
-          doPick(byId(boosters[i]), draft.method, draft.user_method || '{"10":[],"20":[],"30":[],"40":[],"50":[]}'),
-          1
-        )
-
-      if (boosters[0].length == 0) {
-        [boosters, current_booster, last_boosters] = generateBoosters(draft, draft.last_boosters)
-        if (current_booster == -1) {
-          step = 5
-          side = [...own_cards, picked_card]
-          own_cards = []
-        } else {
-          own_cards.push(picked_card)
-        }
+    if (boosters[0].length == 0) {
+      [boosters, current_booster, last_boosters] = generateBoosters($draft, $draft.last_boosters)
+      if (current_booster == -1) {
+        toast.pop(0)
+        step = 5
+        side = [...own_cards, picked_card]
+        own_cards = []
+        awaiter.set({ awaiting: {} })
       } else {
-        boosters = [boosters.pop(), ...boosters]
         own_cards.push(picked_card)
       }
-      return { ...draft, own_cards: own_cards, side: side, boosters, current_booster, last_boosters, step }
+    } else {
+      boosters = [boosters.pop(), ...boosters]
+      own_cards.push(picked_card)
+    }
+
+    draft.update((draft) => {
+      return { ...draft, own_cards, side, their_cards, boosters, current_booster, last_boosters, step }
     })
+
+    doIAMagic()
   }
 
   function deckCardClick(index) {
-    if ($draft.step === 5) {
+    if ($draft.step === 5 && $draft.look_at === null) {
       draft.update((draft) => {
         let [picked_card] = draft.own_cards.splice(index, 1)
         return { ...draft, own_cards: draft.own_cards, side: [...draft.side, picked_card] }
@@ -338,62 +407,41 @@
     })
   }
 
+  function sortDeck(deck, sortBy){
+    return deck.map(byId)
+      .sort((a, b) => {
+        if (sortBy === 'color')
+          return (
+            b.number +
+            1000 * (b.elite ? 1 : 0) +
+            b.cost -
+            10000 * b.color -
+            (a.number + 1000 * (a.elite ? 1 : 0) + a.cost - 10000 * a.color)
+          )
+        if (sortBy === 'rarity')
+          return (
+            (b.elite ? 1 : 0) +
+            100 * b.cost +
+            1000 * b.rarity -
+            ((a.elite ? 1 : 0) + 100 * a.cost + 1000 * a.rarity)
+          )
+        return (
+          1000 * (b.elite ? 1 : 0) +
+          100 * b.cost +
+          b.color -
+          (1000 * (a.elite ? 1 : 0) + 100 * a.cost + a.color)
+        )
+      })
+      .map((card) => card.id)
+  }
+
   function sortDraft(sortBy) {
     draft.update(($draft) => {
       return {
         ...$draft,
-        own_cards: $draft.own_cards
-          .map(byId)
-          .sort((a, b) => {
-            if (sortBy === 'color')
-              return (
-                b.number +
-                1000 * (b.elite ? 1 : 0) +
-                b.cost -
-                10000 * b.color -
-                (a.number + 1000 * (a.elite ? 1 : 0) + a.cost - 10000 * a.color)
-              )
-            if (sortBy === 'rarity')
-              return (
-                (b.elite ? 1 : 0) +
-                100 * b.cost +
-                1000 * b.rarity -
-                ((a.elite ? 1 : 0) + 100 * a.cost + 1000 * a.rarity)
-              )
-            return (
-              1000 * (b.elite ? 1 : 0) +
-              100 * b.cost +
-              b.color -
-              (1000 * (a.elite ? 1 : 0) + 100 * a.cost + a.color)
-            )
-          })
-          .map((card) => card.id),
-        side: $draft.side
-          .map(byId)
-          .sort((a, b) => {
-            if (sortBy === 'color')
-              return (
-                b.number +
-                1000 * (b.elite ? 1 : 0) +
-                b.cost -
-                10000 * b.color -
-                (a.number + 1000 * (a.elite ? 1 : 0) + a.cost - 10000 * a.color)
-              )
-            if (sortBy === 'rarity')
-              return (
-                (b.elite ? 1 : 0) +
-                100 * b.cost +
-                1000 * b.rarity -
-                ((a.elite ? 1 : 0) + 100 * a.cost + 1000 * a.rarity)
-              )
-            return (
-              1000 * (b.elite ? 1 : 0) +
-              100 * b.cost +
-              b.color -
-              (1000 * (a.elite ? 1 : 0) + 100 * a.cost + a.color)
-            )
-          })
-          .map((card) => card.id)
+        own_cards: sortDeck($draft.own_cards, sortBy),
+        side: sortDeck($draft.side, sortBy),
+        their_cards: $draft.their_cards.map((deck) => sortDeck(deck, sortBy))
       }
     })
   }
@@ -409,7 +457,7 @@
     if ($draft.show_score !== '1' || !$draft.boosters[0]?.length) return null
     if ($draft.variant == 'siled' || $draft.method == 'karapet')
       return get_karapet_score(card.set_id, card.number) || '—'
-    if ($draft.method == 'motd' || $draft.method == 'motd2') {
+    if ($draft.method == 'motd' || $draft.method == 'motd2' || $draft.method == 'ai') {
       const index = get_motd_order(card.set_id, card.number)
       return index > -1 ? (10 - index / 25).toFixed(1) : '—'
     }
@@ -419,6 +467,29 @@
     }
     return null
   }
+
+  function deckCardDragUpdate(drag_index, index) {
+    const new_own_cards = [...visible_deck]
+    const element = new_own_cards.splice(drag_index, 1)[0]
+    new_own_cards.splice(index, 0, element)
+
+    if($draft.look_at === null)
+      draft.update((draft) => {
+        return { ...draft, own_cards: new_own_cards }
+      })
+    else
+      draft.update((draft) => {
+        let their_cards = draft.their_cards
+        their_cards[draft.look_at] = new_own_cards
+        return { ...draft, their_cards:  their_cards}
+      })
+  }
+
+function getDeckName(){
+  return $draft.look_at === null ?
+    deck_name :
+    `${$draft.variant === 'draft' ? 'Драфт' : 'Силед'} от ${formatCurrentDate()} (бот ${$draft.look_at + 1})`
+}
 </script>
 
 {#if $draft.step <= 3}
@@ -467,6 +538,7 @@
                   style="width: 13em"
                 />
                 <select bind:value={$draft.method} class="driver-tournir-model">
+                  {#if $settings['other_options']?.ai}<option value="ai">Тугодум AI (бета)</option>{/if}
                   <option value="motd">Статистика MotD.ru (хаотичный)</option>
                   <option value="motd2">Статистика MotD.ru (фиксированный)</option>
                   <option value="karapet">Модель Карапета</option>
@@ -495,7 +567,7 @@
               >
                 {#if index}<option value=""></option>{/if}
                 {#each Object.entries(sets) as [key, set_name]}
-                  {#if parseInt(key) % 10 == 0 && parseInt(key) != 50}
+                  {#if parseInt(key) % 10 == 0}
                     <option value={key}>{set_name}</option>
                   {/if}
                 {/each}
@@ -580,8 +652,19 @@
   {#if $draft.step === 5}
     <aside class="right">
       <section>
-        <input type="text" bind:value={deck_name} class="diver-deck-name" />
+        <details class="dropdown driver-actions" id="select-cards-action">
+          <summary>{#if $draft.look_at === null}Моя колода{:else}Колода бота #{$draft.look_at + 1}{/if}</summary>
+          <ul>
+            <li><a on:click={() => { draft.set({...$draft, look_at: null}); document.getElementById('select-cards-action').removeAttribute('open') }}>Моя колода</a></li>
+            {#each Array($draft.players-1) as _, i}
+              <li><a on:click={() => { draft.set({...$draft, look_at: i}); document.getElementById('select-cards-action').removeAttribute('open') }}>Колода бота #{i + 1}</a></li>
+            {/each}
+          </ul>
+        </details>
 
+        <input type="text" style={`display: ${$draft.look_at === null ? '': 'none'}`} bind:value={deck_name} class="diver-deck-name" />
+
+        {#if $draft.look_at === null}
         <div style="margin: 0 0 1em">
           {#if $draft.own_cards.length == 0}
             <p class="actions">
@@ -603,6 +686,7 @@
             </p>
           {/if}
         </div>
+        {/if}
 
         <details class="dropdown driver-actions" id="own-cards-action">
           <summary>Отсортировать</summary>
@@ -639,16 +723,16 @@
 
         <div class="deck_stats">
           <span class="colors"
-            >{#each collectColors($draft.own_cards) as color}<span class={`color color-${color}`}
+            >{#each collectColors(visible_deck) as color}<span class={`color color-${color}`}
               ></span>{/each}</span
           >
           <span class="elite">
-            <span class="elite-gold">{count($draft.own_cards, 'elite', true)}</span>
-            <span class="elite-silver">{count($draft.own_cards, 'elite', false)}</span>
+            <span class="elite-gold">{count(visible_deck, 'elite', true)}</span>
+            <span class="elite-silver">{count(visible_deck, 'elite', false)}</span>
           </span>
           <h4>
-            <span style={$draft.own_cards.length != 30 ? 'color: #D93526' : ''}
-              >{$draft.own_cards.length}</span
+            <span style={visible_deck.length != 30 ? 'color: #D93526' : ''}
+              >{visible_deck.length}</span
             > / 30
           </h4>
         </div>
@@ -657,9 +741,9 @@
           <p class="actions">
             <button
               class="outline"
-              disabled={$draft.own_cards.length === 0}
+              disabled={visible_deck.length === 0}
               on:click={(_e) => {
-                saveDeck(deck_name, $draft.own_cards, true)
+                saveDeck(getDeckName(), visible_deck, true)
               }}>Раздать колоду</button
             >
           </p>
@@ -668,21 +752,22 @@
           >
             <button
               style="width: 100%;"
-              disabled={$draft.own_cards.length === 0}
+              disabled={visible_deck.length === 0}
               on:click={(_e) => {
-                saveDeck(deck_name, $draft.own_cards)
+                saveDeck(getDeckName(), visible_deck, false)
               }}>Сохранить</button
             >
             <button
               class="outline"
               style="padding: 5px; height: 45px;  margin-left: 10px;"
-              disabled={$draft.own_cards.length === 0}
+              disabled={visible_deck.length === 0}
               on:click={() => {
                 window.electron.ipcRenderer.send(
                   'save-deck',
-                  byId($draft.own_cards),
-                  deck_name,
-                  'tts'
+                  byId(visible_deck),
+                  getDeckName(),
+                  'tts',
+                  'Драфт'
                 )
               }}
             >
@@ -704,9 +789,9 @@
             <button
               class="outline"
               style="padding: 5px; height: 45px;  margin-left: 10px;"
-              disabled={$draft.own_cards.length === 0}
+              disabled={visible_deck.length === 0}
               on:click={(e) => {
-                takeScreenshot('#own-cards', deck_name, groupCards($draft.own_cards, 'asis'), "", e.shiftKey)
+                takeScreenshot('#own-cards', getDeckName(), groupCards(visible_deck, 'asis'), "", e.shiftKey)
               }}
             >
               <svg width="32" height="32" viewBox="0 0 192 192" fill="none"
@@ -773,7 +858,7 @@
       <hr />
     {/if}
 
-    {#key $draft.own_cards}
+    {#key visible_deck}
       <section
         id="own-cards"
         class="card-grid"
@@ -782,8 +867,8 @@
         on:action:zoomin={() => incSize('deck')}
         on:action:zoomout={() => decSize('deck')}
       >
-        {#each byId($draft.own_cards) as card, index (index)}
-          <div use:sortable={{ store: draft, key: 'own_cards' }}>
+        {#each byId(visible_deck) as card, index (index)}
+          <div use:sortable={{ update: deckCardDragUpdate }}>
             <Card
               showTopText={pickHint(card)}
               card={($draft.step === 4 && $draft.show_score === '2' && $draft.boosters[0].length !== 1) ? {number: "../back", alt: ""} : card}
@@ -801,7 +886,7 @@
       </section>
     {/key}
 
-    {#if $draft.step === 5}
+    {#if $draft.step === 5 && $draft.look_at === null}
       <hr />
       {#key $draft.side}
         <div style="min-height: 80vw;">

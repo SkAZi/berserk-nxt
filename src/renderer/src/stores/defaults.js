@@ -20,6 +20,7 @@ export const default_collection_options = {
   details_creature_types: false,
   details_collection: false,
   details_classes: false,
+  details_ldb: false,
   details_moves: false,
   details_alts: false,
   details_lifes: false,
@@ -42,6 +43,7 @@ export const default_collection_options = {
   collection_counts: [],
   collection_alts: [],
   icons: [],
+  ldb: []
 };
 
 export const default_deckbuilding_options = {...default_collection_options,
@@ -65,12 +67,17 @@ export const default_draft_options = {
   method: 'motd',
   variant: 'draft',
   cardSize: {booster: 180, draftdeck: 130, deck: 160, side: 130},
-  boosters_set: ["30","30","30","","",""],
+  boosters_set: ["30","40","40","","",""],
   boosters: [],
   own_cards: [],
   side: [],
+  their_cards: [],
+  look_at: null,
   draft_id: null,
-  last_boosters: null
+  last_boosters: null,
+  useCardPool: false,
+  cardPoolName: "",
+  cardPool: []
 }
 
 export const default_deal_options = {

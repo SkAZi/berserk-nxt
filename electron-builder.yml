@@ -23,8 +23,11 @@ asarUnpack:
 extraResources:
   - from: "src/renderer/cards"
     to: "app.asar.unpacked/resources/cards"
+  - from: "ai/dist/server.${os}.${arch}"
+    to: "app.asar.unpacked/resources/server"
+afterPack: "after-pack.js"
 win:
-  publisherName: "Igor SkAZi Potapov"
+  publisherName: "Igor Potapov"
   executableName: berserk-nxt
   icon: ./build/icon.ico
   artifactName: berserk-nxt-win-${version}-${arch}.${ext}
@@ -38,6 +41,8 @@ nsis:
   createDesktopShortcut: true
   createStartMenuShortcut: true
 mac:
+  hardenedRuntime: true
+  entitlements: build/entitlements.mac.plist
   entitlementsInherit: build/entitlements.mac.plist
   icon: ./build/icon.icns
   extendInfo:
@@ -45,6 +50,7 @@ mac:
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
+  identity: "Igor Potapov (2AC4L7R5YG)"
   notarize: true
   artifactName: berserk-nxt-mac-${version}-${arch}.${ext}
   target: ['dmg'] #, 'zip']

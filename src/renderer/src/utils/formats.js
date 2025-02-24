@@ -116,7 +116,7 @@ export function readTTS(card_data, input) {
   return ["", deck]
 }
 
-export function writeTTS(deck, options) {
+export function writeTTS(deck, options, deck_type='Констрактед') {
   const {path, suffix, sets, rarity, color, root_base, custom_view, deck_base, card_base, creature_types} = options;
 
   function GUID() {
@@ -139,7 +139,12 @@ export function writeTTS(deck, options) {
 
   const ret = fastCopy(root_base);
   const deck_view = fastCopy(deck_base);
-  deck_view["GUID"] = GUID();
+  deck_view["GUID"] = GUID()
+  deck_view["Description"] = deck_type
+  if (deck_type === 'Драфт') {
+    const valid = writeCompact(deck.map((card) => [1, card.set_id, card.number]), options).slice(1).match(/.{1,32}/g).join('\n--')
+    deck_view["LuaScript"] = rot13('--' + valid)
+  }
   deck_view["DeckIDs"] = deck.map((card) => { return getId(card) })
 
   deck_view["CustomDeck"] = deck.reduce((acc, card) => {
@@ -194,8 +199,8 @@ function decodeBase64Triplet(encodedTriplet) {
   return [a, b, c];
 }
 
-export function writeCompact(data) {
-  const options = window.electron.ipcRenderer.sendSync('get-consts')
+export function writeCompact(data, opts = null) {
+  const options = opts || window.electron.ipcRenderer.sendSync('get-consts')
   const sets = Object.keys(options['sets'])
   return '#' + data.map(([c,s,n]) => encodeBase64Triplet([c,sets.indexOf(s.toString()),n])).join('');
 }
@@ -210,4 +215,10 @@ export function readCompact(str, opts = null) {
       }, []);
   }
   return []
+}
+
+export function rot13(str) {
+  return str.replace(/[a-zA-Z]/g, function(c){
+    return String.fromCharCode((c <= "Z" ? 90 : 122) >= (c = c.charCodeAt(0) + 13) ? c : c - 26);
+  })
 }

@@ -1,4 +1,4 @@
-@use '@picocss/pico/scss/pico.scss';
+@use '@yohns/picocss/scss/pico.scss';
 @use 'driver.js/dist/driver.css';
 
 /*
@@ -10,6 +10,23 @@ $color-light: #CFD5E2;
 $color-lighter: #E0E3E7;
 $color-lightest: #D93526;
 */
+
+/* fix picocss */
+[type=radio]:checked, [type=radio]:checked:active, [type=radio]:checked:focus {
+    --pico-background-color: white;
+}
+
+button, [type=submit], [type=reset], [type=button], [type=file]::file-selector-button, [role=button] {
+  --pico-color: white;
+}
+
+:root {
+  --toastContainerTop: auto;
+  --toastContainerLeft: 0;
+  --toastContainerBottom: 0;
+  --toastWidth: 32rem;
+  --toastContainerRight: auto;
+}
 
 $font-family_1: Georgia, 'Times New Roman', serif;
 $background-color_1: #2A3140;
@@ -413,6 +430,10 @@ main > aside.right .actions button {
   width: 100%;
 }
 
+main > aside.left details summary::after {
+  margin-top: -.8em;
+}
+
 main > aside.right details.up{
   margin-top: 0.4em !important;
   margin-bottom: 0;
@@ -494,7 +515,7 @@ dialog article {
   height: 90%;
 }
 
-#loader, #source_loader{
+#loader, #source_loader, #awaiter{
   position: fixed;
   top: 0;
   bottom: 0;
@@ -503,7 +524,20 @@ dialog article {
   background: rgb(32, 38, 50) url(./img/loader.svg) 50% 60% no-repeat;
   background-size: 3vh auto;
   z-index: 99;
-  pointer-events: none;
+}
+
+#awaiter ul {
+  position: relative;
+  top: 100px;
+  left: 20px
+}
+
+#awaiter ul li {
+  padding: 0;
+  margin: 0;
+  font-style: italic;
+  font-size: 80%;
+  list-style: none;
 }
 
 #source_loader{

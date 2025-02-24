@@ -9,12 +9,13 @@
   import Draft from "./components/Draft.svelte";
   import Deal from "./components/Deal.svelte";
   import Decks from "./components/Decks.svelte";
+  import { SvelteToast } from '@zerodevx/svelte-toast'
   //import Table from "./components/Table.svelte";
   import DropZone from './components/includes/DropZone.svelte'
   import About from './components/includes/About.svelte'
   import PrintDeckList from './components/includes/PrintDeckList.svelte'
   import { groupCards, byId } from './stores/cards.js';
-  import { toggleAside, secondLevelMenu, toggleStats, toggleMainMenu, showMainMenu, setDeckId, currentDeck, deckEditMode, loader, toggleAbout, togglePrintDeckList } from './stores/interface.js';
+  import { toggleAside, secondLevelMenu, toggleStats, toggleMainMenu, showMainMenu, setDeckId, currentDeck, deckEditMode, loader, awaiter, toggleAbout, togglePrintDeckList } from './stores/interface.js';
   import { shortcuts } from './utils/shortcuts.js';
   import { takeScreenshot } from './utils/ux.js'
   import { user_decks } from './stores/user_data.js';
@@ -146,8 +147,22 @@
 </section>
 {/if}
 
+<SvelteToast options={{ reversed: true, intro: { y: 192 } }} />
+
 <main class="container-fluid">
-  {#if $loader}<div id="loader" out:fade={{ duration: 1000, easing: cubicInOut }}></div>{/if}
+  {#if $loader}
+  <div id="loader" out:fade={{ duration: 10, easing: cubicInOut }}>
+  </div>
+  {/if}
+  {#if Object.keys($awaiter.awaiting).length > 0}
+  <div id="awaiter" in:fade={{ delay: 200, duration: 20, easing: cubicInOut }} out:fade={{ duration: 200, easing: cubicInOut }}>
+    <ul in:fade={{ delay: 500, duration: 10, easing: cubicInOut }}>
+    {#each Object.keys($awaiter.awaiting) as key}
+      <li>{$awaiter.awaiting[key]}</li>
+    {/each}
+    </ul>
+  </div>
+  {/if}
   <Router {routes} />
 </main>
 

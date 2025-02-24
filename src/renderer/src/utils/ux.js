@@ -35,17 +35,21 @@ export function takeScreenshot(selector, name, data = null, suffix = "", clipboa
     Array.from(node.querySelectorAll('.sortable')).forEach((el) => el.style.height = '')
     document.body.appendChild(node);
     html2canvas(node).then(canvas => {
+      document.body.removeChild(node);
       if(clipboard) {
         canvas.toBlob((blob) => {
           if (blob) {
             const clipboardItem = new ClipboardItem({ 'image/png': blob });
-            navigator.clipboard.write([clipboardItem])
-              .then(() => console.log('Скриншот сохранен в буфер обмена'))
-              .catch(err => console.error('Ошибка при сохранении в буфер обмена:', err));
+            try {
+              navigator.clipboard.write([clipboardItem])
+                .then(() => console.log('Скриншот сохранен в буфер обмена'))
+                .catch(err => console.error('Ошибка при сохранении в буфер обмена:', err));
+            } catch(err) {
+              console.error('Ошибка при сохранении в буфер обмена:', err);
+            }
           }
         }, 'image/png');
       } else {
-        document.body.removeChild(node);
         const dataURL = canvas.toDataURL("image/jpeg", 0.9);
         const link = document.createElement('a');
         link.download = name + suffix + '.jpg';

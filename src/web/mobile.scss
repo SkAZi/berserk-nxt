@@ -1,4 +1,12 @@
 @media screen and (orientation: portrait) {
+  body > header ~ main {
+    padding-top: 120px;
+  }
+
+  main > aside.right {
+    padding-top: 60px;
+  }
+
   main > aside.left #search {
     height: 90px;
     padding: 15px 15px 15px 75px;

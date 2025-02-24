@@ -3,7 +3,7 @@
   import jsQR from 'jsqr';
 
   import { onMount } from 'svelte';
-  import { readCollection, readDeck, readTTS, readCompact } from '../../utils/formats.js';
+  import { readCollection, readDeck, readTTS, readCompact, rot13 } from '../../utils/formats.js';
   import { navigate } from "@jamen/svelte-router";
   import { shortcuts } from '../../utils/shortcuts.js';
 
@@ -75,17 +75,25 @@
                   const canvas = document.createElement('canvas');
                   const ctx = canvas.getContext('2d');
 
-                  const cropWidth = 300;
-                  const cropHeight = 300;
-                  canvas.width = cropWidth;
-                  canvas.height = cropHeight;
+                  if (img.width > 1600) {
+                    canvas.width = img.width / 2
+                    canvas.height = img.height / 2
+                    ctx.drawImage(img, 0, 0, canvas.width, canvas.height)
+                    img.src = canvas.toDataURL()
+                    return
+                  }
 
-                  ctx.drawImage(img, 0, img.height - cropHeight, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight);
+                  const cropWidth = 300
+                  const cropHeight = 300
+                  canvas.width = cropWidth
+                  canvas.height = cropHeight
 
-                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height);
-                  const code = jsQR(imageData.data, imageData.width, imageData.height);
+                  ctx.drawImage(img, 0, img.height - cropHeight, cropWidth, cropHeight, 0, 0, cropWidth, cropHeight)
+
+                  const imageData = ctx.getImageData(0, 0, canvas.width, canvas.height)
+                  const code = jsQR(imageData.data, imageData.width, imageData.height)
                   if(!code) return
-                  const deck = readCompact(code.data);
+                  const deck = readCompact(code.data)
                   if(deck.length > 0) {
                     user_decks.update(($user_decks) => {
                       return {...$user_decks, decks: [{id: v4(), name: file.name.split(".")[0] || "Новая колода", cards: deck, date: Date.now(), tags: ['Импорт']}, ...$user_decks['decks']]};
@@ -127,11 +135,15 @@
         readAndAddDeck(url.pathname.split('/').pop(), response)
       })
     }
+    if(content.startsWith('#')) readAndAddDeck('', content)
+    if(content.startsWith('--')) readAndAddDeck('', '#' + rot13(content.replaceAll('--', '').replaceAll('\n', '').replaceAll('\r', '')))
   }
 
   function readAndAddDeck(filename, result) {
     try {
-      const [deckName, deck] = filename.endsWith('.json') ?
+      let deckName, deck
+      if (filename === '') deck = readCompact(result)
+      else [deckName, deck] = filename.endsWith('.json') ?
         readTTS(cardsStore, result) : readDeck(cardsStore, result)
 
       if(deck.length > 0) {

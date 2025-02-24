@@ -7,8 +7,10 @@ import icon from '../../resources/icon.png?asset'
 import { default_settings } from '../renderer/src/stores/defaults.js'
 import { readCollection, writeCollection, readDeck, writeTTS, readTTS, readCompact } from '../renderer/src/utils/formats.js'
 import { checkForUpdates, installAddon, deinstallAddon } from './updater.js'
-import fs from 'fs-extra';
-import axios from 'axios';
+import fs from 'fs-extra'
+import axios from 'axios'
+
+const ENABLE_AI = true
 
 const resources_path = is.dev ? join(__dirname, '../../resources') : join(process.resourcesPath, 'app.asar.unpacked', 'resources');
 let card_data = JSON.parse(fs.readFileSync(join(resources_path, 'data.json'), 'utf8'));
@@ -60,6 +62,23 @@ const settings_store = new Store({
     },
     '1.5.0': (store) => {
       store.set("settings.draft_options.last_boosters", [null,null,null,null])
+    },
+    '1.6.5': (store) => {
+      if(!store.has("settings.collection_options.ldb")) store.set("settings.collection_options.ldb", [])
+      if(!store.has("settings.deckbuilding_options.ldb")) store.set("settings.deckbuilding_options.ldb", [])
+    },
+    '1.6.7': (store) => {
+      store.set("settings.collection_options.ldb", [])
+      store.set("settings.deckbuilding_options.ldb", [])
+    },
+    '1.7.1': (store) => {
+      if(!store.has("settings.deckbuilding_options.useCardPool")) store.set("settings.deckbuilding_options.useCardPool", false)
+      if(!store.has("settings.deckbuilding_options.cardPoolName")) store.set("settings.deckbuilding_options.cardPoolName", "")
+      if(!store.has("settings.deckbuilding_options.cardPool")) store.set("settings.deckbuilding_options.cardPool", [])
+    },
+    '1.7.4': (store) => {
+      if(!store.has("settings.draft_options.their_cards")) store.set("settings.deckbuilding_options.their_cards", Array.from({ length: 16 }, () => []))
+      if(!store.has("settings.draft_options.look_at")) store.set("settings.deckbuilding_options.look_at", null)
     }
   }
 })
@@ -160,6 +179,23 @@ const watchers = {
   },
 }
 
+let child
+if (stores['settings'].get('settings.other_options.ai')) {
+  let executable = join(resources_path, 'server')
+  if (process.platform === 'win32') executable = join(resources_path, 'server.exe')
+  if (executable && fs.existsSync(executable)) {
+    const { spawn } = require('child_process')
+    try {
+      child = spawn(executable, [], { detached: true, cwd: resources_path })
+      child.stdout.on('data', (_data) => {  })
+      child.stderr.on('data', (data) => { console.log(`Tugodum AI> ${data}`) })
+      child.unref()
+    } catch (e) {
+      console.log('Error starting AI', e)
+    }
+  }
+}
+
 let mainWindow;
 
 function deepMerge(target: object, source: object): object {
@@ -235,8 +271,8 @@ app.whenReady().then(async () => {
     event.returnValue = null
   })
 
-  ipcMain.on('save-deck', (event, deck, name, type) => {
-    if(type === 'tts') exportDeckTTS(deck, name)
+  ipcMain.on('save-deck', (event, deck, name, type, deck_type) => {
+    if(type === 'tts') exportDeckTTS(deck, name, deck_type)
     else exportDeck(deck, name, type)
     event.returnValue = null
   })
@@ -329,14 +365,30 @@ app.on('window-all-closed', () => {
   }
 })
 
+app.on('quit', () => {
+  if(child) child.kill()
+  Object.keys(watchers).forEach(key => watchers[key]['watchers'].close())
+})
 
-const submenuTemplate : MenuItemConstructorOptions[] = [
+let submenuTemplate : MenuItemConstructorOptions[] = [
   { label: 'Перезагрузить приложение', role: 'reload' },
   { label: 'Указать путь к настройкам', click: selectFolder },
-  { label: 'Посмотреть резервные копии', click: () => { shell.openPath(settings_path || dirname(settings_store.path))} },
-  { type: 'separator' },
-  { label: 'Добавить тестовые данные', click: patchAddon }
+  { label: 'Посмотреть резервные копии', click: () => { shell.openPath(settings_path || dirname(settings_store.path))} }
 ]
+
+if (ENABLE_AI) {
+  submenuTemplate.push({ type: 'separator' })
+  submenuTemplate.push({ label: 'Запускать Тугодум AI (бета)', type: 'checkbox', checked: stores['settings'].get('settings.other_options.ai'),
+    click: () => {
+      stores['settings'].set('settings.other_options.ai', !stores['settings'].get('settings.other_options.ai'))
+      app.relaunch()
+      app.exit()
+    }
+  })
+}
+
+submenuTemplate.push({ type: 'separator' })
+submenuTemplate.push({ label: 'Добавить тестовые данные', click: patchAddon })
 addon_names.map(name => {
   submenuTemplate.push({ label: `Удалить: ${name.replace(/^addon\-?(.*)\.json$/,'$1') || 'basic'}`, click: () => { removeAddon(name) } })
 })
@@ -348,20 +400,20 @@ menuTemplate.push({
   label: app.getName(),
   submenu: submenuTemplate
 })
-if(process.platform === 'darwin') {
+if (process.platform === 'darwin') {
   menuTemplate.push({
     label: 'Правка',
     role: 'editMenu'
   });
-
-  menuTemplate.push({
-   label: "Тестирование",
-   submenu: [
-     { label: 'Обновить приложение', role: 'reload' },
-     { label: 'Открыть DevTools', role: 'toggleDevTools' },
-   ]
-  });
 }
+menuTemplate.push({
+ label: "Тестирование",
+ submenu: [
+   { label: 'Обновить приложение', role: 'reload' },
+   { label: 'Открыть DevTools', role: 'toggleDevTools' },
+ ]
+});
+
 //else
 //menuTemplate.push({
 //  label: "Тестирование",
@@ -673,8 +725,8 @@ function importDeck() {
 
       if (filePath.endsWith('.jpg') || filePath.endsWith('.jpeg')) {
         const image = jpeg.decode(data);
-        const width = 300;
-        const height = 300;
+        const width = 600;
+        const height = 600;
         const startX = 0;
         const startY = image.height - height;
         const qrData = new Uint8ClampedArray(width * height * 4);
@@ -716,7 +768,7 @@ function importDeck() {
 
 
 
-function exportDeckTTS(deck, name) {
+function exportDeckTTS(deck, name, deck_type = 'Констрактед') {
   const platform = os.platform();
   let path = app.getPath('downloads')
   if (platform === 'darwin') {
@@ -739,7 +791,7 @@ function exportDeckTTS(deck, name) {
     ]
   }).then(file => {
     if (!file.canceled) {
-      const content = writeTTS(deck, card_const['tts_options']);
+      const content = writeTTS(deck, card_const['tts_options'], deck_type);
       if(file.filePath) {
         fs.writeFileSync(file.filePath.toString(), content, 'utf-8');
         fs.copyFileSync(join(resources_path, 'back.png'), file.filePath.replace(/\.json$/, '.png'));

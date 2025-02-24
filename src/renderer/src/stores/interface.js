@@ -64,6 +64,8 @@ export function setSecondLevelMenu(menu) {
 
 export const loader = writable(true)
 
+export const awaiter = writable({ awaiting: {} })
+
 export const showMainMenu = writable({
   isOpen: false
 })
