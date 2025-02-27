@@ -67,7 +67,7 @@ type Card struct {
 
 var (
     cardInfo        = make(map[int]Card)
-    globalClasses   []string
+    globalClasses   = []string{"Акванит","Аккениец","Ангел","Архаалит","Боевая_машина","Болото","Врата","Герой-воин","Герой-жрец","Герой-маг","Герой-разбойник","Гном","Город","Горы","Демон","Дитя_Кронга","Дракон","Дух","Инквизитор","Йордлинг","Ковен","Койар","Крысолюд","Лес","Линунг","Море","Нежить","Орк","Пират","Постройка","Пустыня","Река","Речная_дева","Слуа","Степь","Страж_леса","Тоа-Дан","Тролль","Элементаль","Эльф"}
     globalIcons     = []string{"ova", "ovz", "armor", "regen", "ovs", "stamina", "zoal", "zoz", "direct", "zoo", "zor", "zom", "zot", "zov"}
     globalTypes     = []int{0,1,2,3,4,5}
     predefinedCards = []int{40034, 40014, 20164, 30160, 30098, 30096, 30054, 40199, 40077}
@@ -123,10 +123,10 @@ func collectGlobalFeatures() {
         //typesSet[strconv.Itoa(card.Type)] = struct{}{}
     }
 
-    for cls := range classesSet {
-        cleaned := strings.ReplaceAll(cls, " ", "_")
-        globalClasses = append(globalClasses, cleaned)
-    }
+    //for cls := range classesSet {
+    //    cleaned := strings.ReplaceAll(cls, " ", "_")
+    //    globalClasses = append(globalClasses, cleaned)
+    //}
     sort.Strings(globalClasses)
 
     // for icon := range iconsSet {
