@@ -6,7 +6,8 @@
     "22": "Русы против ящеров",
     "30": "Семена раздора",
     "40": "Ложные боги",
-    "50": "Путь хранителей"
+    "50": "Путь хранителей",
+    "999": "ЛДБ2"
   },
   "rarities": {
     "1": "Частая",
@@ -148,11 +149,11 @@
   },
   "tts_options": {
     "path": "https://berserk-nxt.ru/tts/",
-    "suffix": {"40":"f","50":"_180"},
+    "suffix": {"40":"f","50":"_184"},
     "rarity": {"1":"Частая","2":"Необычная","3":"Редкая","4":"Ультраредкая"},
     "creature_types": {"0": "Нелетающее","1": "Летающее","2": "Компаньон","3": "Паразит","4": "Артефакт","5": "Местность"},
     "color": {"1":"Степи", "2":"Горы", "4":"Леса", "8":"Болота", "16":"Тьма", "32":"Нейтралы"},
-    "sets": {"10": "Война стихий","20": "Нашествие тьмы","21": "Легенды Лаара","22": "Русы против ящеров","30": "Семена раздора","40": "Ложные боги","50": "Путь хранителей"},
+    "sets": {"10": "Война стихий","20": "Нашествие тьмы","21": "Легенды Лаара","22": "Русы против ящеров","30": "Семена раздора","40": "Ложные боги","50": "Путь хранителей","999": "ЛДБ2"},
     "root_base": {"SaveName":"","Date":"","VersionNumber":"","GameMode":"","GameType":"","GameComplexity":"","Tags":[],"Gravity":0.5,"PlayArea":0.5,"Table":"","Sky":"","Note":"","TabStates":{},"LuaScript":"","LuaScriptState":"","XmlUI":"","ObjectStates":[]},
     "custom_view": {"FaceURL":"","BackURL":"","NumWidth":10,"NumHeight":7,"BackIsHidden":false,"UniqueBack":false,"Type":0},
     "deck_base": {"GUID":"GUID","DeckIDs":[],"CustomDeck":{},"ContainedObjects":[],"Tags":[],"Name":"Deck","Transform":{"posX":20,"posY":1,"posZ":10,"rotX":0,"rotY":180,"rotZ":180,"scaleX":2.5,"scaleY":2.5,"scaleZ":2.5},"Nickname":"","Description":"","GMNotes":"","AltLookAngle":{"x":0.0,"y":0.0,"z":0.0},"ColorDiffuse":{"r":0.713235259,"g":0.713235259,"b":0.713235259},"LayoutGroupSortIndex":0,"Value":0,"Locked":false,"Grid":true,"Snap":true,"IgnoreFoW":false,"MeasureMovement":false,"DragSelectable":true,"Autoraise":true,"Sticky":true,"Tooltip":true,"GridProjection":false,"HideWhenFaceDown":true,"Hands":false,"SidewaysCard":false,"LuaScript":"","LuaScriptState":"","XmlUI":""},

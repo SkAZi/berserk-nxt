@@ -1,6 +1,6 @@
 import json
-import csv
-import os, shutil
+#import csv
+import os #, shutil
 
 with open('../resources/data.json', 'r') as f:
     cards_json = json.load(f)

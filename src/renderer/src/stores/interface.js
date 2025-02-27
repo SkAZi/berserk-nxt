@@ -4,12 +4,13 @@ export const popupStore = writable({
   isOpen: false,
   card: null,
   deck: null,
-  card_list: []
+  card_list: [],
+  effect: null
 });
 
-export function togglePopup(card, card_list, type = 'card') {
+export function togglePopup(card, card_list, type = 'card', effect = null) {
   popupStore.update(($popupStore) => {
-    return { isOpen: !$popupStore.isOpen, card: type === 'card' ? card : null, deck: type === 'deck' ? card : null, card_list: card_list }
+    return { isOpen: !$popupStore.isOpen, card: type === 'card' ? card : null, deck: type === 'deck' ? card : null, card_list: card_list, effect: effect }
   })
 }
 
@@ -96,5 +97,14 @@ export const printDeckListStore = writable({
 export function togglePrintDeckList() {
   printDeckListStore.update(($printDeckListStore) => {
     return { isOpen: !$printDeckListStore.isOpen }
+  })
+}
+
+export function changeCardSize(store, type, step = 10) {
+  store.update((store) => {
+    if(type === 'cardSize') return { ...store, cardSize: Math.max(Math.min(store.cardSize + step, 300), 80) }
+    if(type === 'deckSize') return { ...store, deckSize: Math.max(Math.min(store.deckSize + step, 300), 80) }
+    let newSize = Math.max(Math.min(store.cardSize[type] + step, 300), 80)
+    return { ...store, cardSize: { ...store.cardSize, [type]: newSize } }
   })
 }

@@ -13,7 +13,8 @@
     setSecondLevelMenu,
     setDeckId,
     loader,
-    awaiter
+    awaiter,
+    changeCardSize
   } from '../stores/interface.js'
   import { shortcuts } from '../utils/shortcuts.js'
   import { draft_driver } from '../stores/help.js'
@@ -27,7 +28,7 @@
     get_karapet_score,
     get_motd_order
   } from '../utils/draft.js'
-  import { byId, sets, groupCards } from '../stores/cards.js'
+  import { byId, sets, groupCards, countOfType, sortCards } from '../stores/cards.js'
 
   import Card from './includes/Card.svelte'
   import Popup from './includes/Popup.svelte'
@@ -391,65 +392,15 @@
     ].sort((a, b) => a - b)
   }
 
-  function incSize(type) {
-    if ($draft.step === 4 && type == 'deck') type = 'draftdeck'
-    draft.update(($draft) => {
-      let newSize = Math.min($draft.cardSize[type] + 10, 300)
-      return { ...$draft, cardSize: { ...$draft.cardSize, [type]: newSize } }
-    })
-  }
-
-  function decSize(type) {
-    if ($draft.step === 4 && type == 'deck') type = 'draftdeck'
-    draft.update(($draft) => {
-      let newSize = Math.max($draft.cardSize[type] - 10, 80)
-      return { ...$draft, cardSize: { ...$draft.cardSize, [type]: newSize } }
-    })
-  }
-
-  function sortDeck(deck, sortBy){
-    return deck.map(byId)
-      .sort((a, b) => {
-        if (sortBy === 'color')
-          return (
-            b.number +
-            1000 * (b.elite ? 1 : 0) +
-            b.cost -
-            10000 * b.color -
-            (a.number + 1000 * (a.elite ? 1 : 0) + a.cost - 10000 * a.color)
-          )
-        if (sortBy === 'rarity')
-          return (
-            (b.elite ? 1 : 0) +
-            100 * b.cost +
-            1000 * b.rarity -
-            ((a.elite ? 1 : 0) + 100 * a.cost + 1000 * a.rarity)
-          )
-        return (
-          1000 * (b.elite ? 1 : 0) +
-          100 * b.cost +
-          b.color -
-          (1000 * (a.elite ? 1 : 0) + 100 * a.cost + a.color)
-        )
-      })
-      .map((card) => card.id)
-  }
-
   function sortDraft(sortBy) {
     draft.update(($draft) => {
       return {
         ...$draft,
-        own_cards: sortDeck($draft.own_cards, sortBy),
-        side: sortDeck($draft.side, sortBy),
-        their_cards: $draft.their_cards.map((deck) => sortDeck(deck, sortBy))
+        own_cards: sortCards($draft.own_cards, sortBy),
+        side: sortCards($draft.side, sortBy),
+        their_cards: $draft.their_cards.map((deck) => sortCards(deck, sortBy))
       }
     })
-  }
-
-  function count(deck_cards, key, value) {
-    return deck_cards.reduce((acc, card_id) => {
-      return acc + (byId(card_id) && byId(card_id)[key] === value ? 1 : 0)
-    }, 0)
   }
 
   function pickHint(card) {
@@ -493,7 +444,7 @@ function getDeckName(){
 </script>
 
 {#if $draft.step <= 3}
-  <a href="https://t.me/+w0mT8aSk6xVlMTQ6" target="_blank" id="ellion"></a>
+  <a href={"#"} on:click|preventDefault={() => togglePopup(byId("50140"), null, 'card', 'sparcles')} id="ellion">&nbsp;</a>
   <section
     class="content draft_form"
     use:shortcuts={{ keyboard: true }}
@@ -647,278 +598,277 @@ function getDeckName(){
       {/if}
     </article>
   </section>
-  <a href="https://t.me/+w0mT8aSk6xVlMTQ6" target="_blank" id="ellion-text"></a>
 {:else}
-  {#if $draft.step === 5}
-    <aside class="right">
-      <section>
-        <details class="dropdown driver-actions" id="select-cards-action">
-          <summary>{#if $draft.look_at === null}Моя колода{:else}Колода бота #{$draft.look_at + 1}{/if}</summary>
-          <ul>
-            <li><a on:click={() => { draft.set({...$draft, look_at: null}); document.getElementById('select-cards-action').removeAttribute('open') }}>Моя колода</a></li>
-            {#each Array($draft.players-1) as _, i}
-              <li><a on:click={() => { draft.set({...$draft, look_at: i}); document.getElementById('select-cards-action').removeAttribute('open') }}>Колода бота #{i + 1}</a></li>
-            {/each}
-          </ul>
-        </details>
+{#if $draft.step === 5}
+  <aside class="right">
+    <section>
+      <details class="dropdown driver-actions" id="select-cards-action">
+        <summary>{#if $draft.look_at === null}Моя колода{:else}Колода бота #{$draft.look_at + 1}{/if}</summary>
+        <ul>
+          <li><a href={"#"} on:click|preventDefault={() => { draft.set({...$draft, look_at: null}); document.getElementById('select-cards-action').removeAttribute('open') }}>Моя колода</a></li>
+          {#each Array($draft.players-1) as _, i}
+            <li><a href={"#"} on:click|preventDefault={() => { draft.set({...$draft, look_at: i}); document.getElementById('select-cards-action').removeAttribute('open') }}>Колода бота #{i + 1}</a></li>
+          {/each}
+        </ul>
+      </details>
 
-        <input type="text" style={`display: ${$draft.look_at === null ? '': 'none'}`} bind:value={deck_name} class="diver-deck-name" />
+      <input type="text" style={`display: ${$draft.look_at === null ? '': 'none'}`} bind:value={deck_name} class="diver-deck-name" />
 
-        {#if $draft.look_at === null}
-        <div style="margin: 0 0 1em">
-          {#if $draft.own_cards.length == 0}
-            <p class="actions">
-              <button
-                class="outline"
-                on:click={() => {
-                  moveCards(true)
-                }}>Всё в колоду</button
-              >
-            </p>
-          {:else if $draft.side.length == 0}
-            <p class="actions">
-              <button
-                class="outline"
-                on:click={() => {
-                  moveCards(false)
-                }}>Всё в сайд</button
-              >
-            </p>
-          {/if}
-        </div>
-        {/if}
-
-        <details class="dropdown driver-actions" id="own-cards-action">
-          <summary>Отсортировать</summary>
-          <ul>
-            <li>
-              <a
-                use:shortcuts
-                on:action:primary={() => {
-                  document.getElementById('own-cards-action').removeAttribute('open')
-                  sortDraft('color')
-                }}>Стихия</a
-              >
-            </li>
-            <li>
-              <a
-                use:shortcuts
-                on:action:primary={() => {
-                  document.getElementById('own-cards-action').removeAttribute('open')
-                  sortDraft('cost')
-                }}>Стоимость</a
-              >
-            </li>
-            <li>
-              <a
-                use:shortcuts
-                on:action:primary={() => {
-                  document.getElementById('own-cards-action').removeAttribute('open')
-                  sortDraft('rarity')
-                }}>Редкость</a
-              >
-            </li>
-          </ul>
-        </details>
-
-        <div class="deck_stats">
-          <span class="colors"
-            >{#each collectColors(visible_deck) as color}<span class={`color color-${color}`}
-              ></span>{/each}</span
-          >
-          <span class="elite">
-            <span class="elite-gold">{count(visible_deck, 'elite', true)}</span>
-            <span class="elite-silver">{count(visible_deck, 'elite', false)}</span>
-          </span>
-          <h4>
-            <span style={visible_deck.length != 30 ? 'color: #D93526' : ''}
-              >{visible_deck.length}</span
-            > / 30
-          </h4>
-        </div>
-
-        <div class="diver-deck-edit" style="margin-top: 1em">
+      {#if $draft.look_at === null}
+      <div style="margin: 0 0 1em">
+        {#if $draft.own_cards.length == 0}
           <p class="actions">
             <button
               class="outline"
-              disabled={visible_deck.length === 0}
-              on:click={(_e) => {
-                saveDeck(getDeckName(), visible_deck, true)
-              }}>Раздать колоду</button
+              on:click={() => {
+                moveCards(true)
+              }}>Всё в колоду</button
             >
           </p>
-          <div
-            style="display: flex; justify-content: space-between; width: 100%; margin-top: 10px;"
-          >
-            <button
-              style="width: 100%;"
-              disabled={visible_deck.length === 0}
-              on:click={(_e) => {
-                saveDeck(getDeckName(), visible_deck, false)
-              }}>Сохранить</button
-            >
+        {:else if $draft.side.length == 0}
+          <p class="actions">
             <button
               class="outline"
-              style="padding: 5px; height: 45px;  margin-left: 10px;"
-              disabled={visible_deck.length === 0}
               on:click={() => {
-                window.electron.ipcRenderer.send(
-                  'save-deck',
-                  byId(visible_deck),
-                  getDeckName(),
-                  'tts',
-                  'Драфт'
-                )
-              }}
+                moveCards(false)
+              }}>Всё в сайд</button
             >
-              <svg
-                width="32"
-                height="32"
-                viewBox="0 0 50.8 50.8"
-                style="fill: none;"
-                xml:space="preserve"
-                ><path
-                  d="M5.821 24.871h39.158v20.108H5.821z"
-                  style="fill:none;stroke:#ffffff;stroke-width:3.175;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
-                /><path
-                  d="M14.949 5.82h20.902M8.864 18.52h33.072m-30.03-6.35h26.988"
-                  style="fill:#000000;stroke:#ffffff;stroke-width:3.175;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
-                /></svg
-              >
-            </button>
-            <button
-              class="outline"
-              style="padding: 5px; height: 45px;  margin-left: 10px;"
-              disabled={visible_deck.length === 0}
-              on:click={(e) => {
-                takeScreenshot('#own-cards', getDeckName(), groupCards(visible_deck, 'asis'), "", e.shiftKey)
-              }}
-            >
-              <svg width="32" height="32" viewBox="0 0 192 192" fill="none"
-                ><path
-                  fill="#ffffff"
-                  d="M60 50v6a6 6 0 0 0 4.8-2.4L60 50Zm12-16v-6a6 6 0 0 0-4.8 2.4L72 34Zm60 16-4.8 3.6A6 6 0 0 0 132 56v-6Zm-12-16 4.8-3.6A6 6 0 0 0 120 28v6Zm44 32v76h12V66h-12Zm-10 86H38v12h116v-12ZM28 142V66H16v76h12Zm10-86h22V44H38v12Zm26.8-2.4 12-16-9.6-7.2-12 16 9.6 7.2ZM132 56h22V44h-22v12Zm4.8-9.6-12-16-9.6 7.2 12 16 9.6-7.2ZM120 28H72v12h48V28ZM38 152c-5.523 0-10-4.477-10-10H16c0 12.15 9.85 22 22 22v-12Zm126-10c0 5.523-4.477 10-10 10v12c12.15 0 22-9.85 22-22h-12Zm12-76c0-12.15-9.85-22-22-22v12c5.523 0 10 4.477 10 10h12ZM28 66c0-5.523 4.477-10 10-10V44c-12.15 0-22 9.85-22 22h12Z"
-                /><circle cx="96" cy="102" r="28" stroke="#ffffff" stroke-width="12" /></svg
-              >
-            </button>
-          </div>
-        </div>
-
-        {#if $draft.variant == 'draft' && $draft.last_boosters}
-        <p class="actions" style="margin-top: 15px;">
-            <button
-                class="secondary"
-                style="width: 100%;"
-                on:click={(_e) => {
-                    window.electron.ipcRenderer.send(
-                        'save-draft',
-                        null,
-                        $draft.last_boosters,
-                        deck_name
-                    )
-                }}>Сохранить турнир</button
-            >
-        </p>
+          </p>
         {/if}
-      </section>
-    </aside>
+      </div>
+      {/if}
+
+      <details class="dropdown driver-actions" id="own-cards-action">
+        <summary>Отсортировать</summary>
+        <ul>
+          <li>
+            <a href={"#"}
+              use:shortcuts
+              on:action:primary={() => {
+                document.getElementById('own-cards-action').removeAttribute('open')
+                sortDraft('color')
+              }}>Стихия</a
+            >
+          </li>
+          <li>
+            <a href={"#"}
+              use:shortcuts
+              on:action:primary={() => {
+                document.getElementById('own-cards-action').removeAttribute('open')
+                sortDraft('cost')
+              }}>Стоимость</a
+            >
+          </li>
+          <li>
+            <a href={"#"}
+              use:shortcuts
+              on:action:primary={() => {
+                document.getElementById('own-cards-action').removeAttribute('open')
+                sortDraft('rarity')
+              }}>Редкость</a
+            >
+          </li>
+        </ul>
+      </details>
+
+      <div class="deck_stats">
+        <span class="colors"
+          >{#each collectColors(visible_deck) as color}<span class={`color color-${color}`}
+            ></span>{/each}</span
+        >
+        <span class="elite">
+          <span class="elite-gold">{countOfType(visible_deck, 'elite', true)}</span>
+          <span class="elite-silver">{countOfType(visible_deck, 'elite', false)}</span>
+        </span>
+        <h4>
+          <span style={visible_deck.length != 30 ? 'color: #D93526' : ''}
+            >{visible_deck.length}</span
+          > / 30
+        </h4>
+      </div>
+
+      <div class="diver-deck-edit" style="margin-top: 1em">
+        <p class="actions">
+          <button
+            class="outline"
+            disabled={visible_deck.length === 0}
+            on:click={(_e) => {
+              saveDeck(getDeckName(), visible_deck, true)
+            }}>Раздать колоду</button
+          >
+        </p>
+        <div
+          style="display: flex; justify-content: space-between; width: 100%; margin-top: 10px;"
+        >
+          <button
+            style="width: 100%;"
+            disabled={visible_deck.length === 0}
+            on:click={(_e) => {
+              saveDeck(getDeckName(), visible_deck, false)
+            }}>Сохранить</button
+          >
+          <button
+            class="outline"
+            style="padding: 5px; height: 45px;  margin-left: 10px;"
+            disabled={visible_deck.length === 0}
+            on:click={() => {
+              window.electron.ipcRenderer.send(
+                'save-deck',
+                byId(visible_deck),
+                getDeckName(),
+                'tts',
+                'Драфт'
+              )
+            }}
+          >
+            <svg
+              width="32"
+              height="32"
+              viewBox="0 0 50.8 50.8"
+              style="fill: none;"
+              xml:space="preserve"
+              ><path
+                d="M5.821 24.871h39.158v20.108H5.821z"
+                style="fill:none;stroke:#ffffff;stroke-width:3.175;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"
+              /><path
+                d="M14.949 5.82h20.902M8.864 18.52h33.072m-30.03-6.35h26.988"
+                style="fill:#000000;stroke:#ffffff;stroke-width:3.175;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"
+              /></svg
+            >
+          </button>
+          <button
+            class="outline"
+            style="padding: 5px; height: 45px;  margin-left: 10px;"
+            disabled={visible_deck.length === 0}
+            on:click={(e) => {
+              takeScreenshot('#own-cards', getDeckName(), groupCards(visible_deck, 'asis'), "", e.shiftKey)
+            }}
+          >
+            <svg width="32" height="32" viewBox="0 0 192 192" fill="none"
+              ><path
+                fill="#ffffff"
+                d="M60 50v6a6 6 0 0 0 4.8-2.4L60 50Zm12-16v-6a6 6 0 0 0-4.8 2.4L72 34Zm60 16-4.8 3.6A6 6 0 0 0 132 56v-6Zm-12-16 4.8-3.6A6 6 0 0 0 120 28v6Zm44 32v76h12V66h-12Zm-10 86H38v12h116v-12ZM28 142V66H16v76h12Zm10-86h22V44H38v12Zm26.8-2.4 12-16-9.6-7.2-12 16 9.6 7.2ZM132 56h22V44h-22v12Zm4.8-9.6-12-16-9.6 7.2 12 16 9.6-7.2ZM120 28H72v12h48V28ZM38 152c-5.523 0-10-4.477-10-10H16c0 12.15 9.85 22 22 22v-12Zm126-10c0 5.523-4.477 10-10 10v12c12.15 0 22-9.85 22-22h-12Zm12-76c0-12.15-9.85-22-22-22v12c5.523 0 10 4.477 10 10h12ZM28 66c0-5.523 4.477-10 10-10V44c-12.15 0-22 9.85-22 22h12Z"
+              /><circle cx="96" cy="102" r="28" stroke="#ffffff" stroke-width="12" /></svg
+            >
+          </button>
+        </div>
+      </div>
+
+      {#if $draft.variant == 'draft' && $draft.last_boosters}
+      <p class="actions" style="margin-top: 15px;">
+          <button
+              class="secondary"
+              style="width: 100%;"
+              on:click={(_e) => {
+                  window.electron.ipcRenderer.send(
+                      'save-draft',
+                      null,
+                      $draft.last_boosters,
+                      deck_name
+                  )
+              }}>Сохранить турнир</button
+          >
+      </p>
+      {/if}
+    </section>
+  </aside>
+{/if}
+
+<section
+  class="content"
+  use:shortcuts={{ keyboard: true }}
+  on:action:close={() => {
+    if (!$popupStore.isOpen) {
+      stopDraft()
+    }
+  }}
+>
+  {#if $draft.step === 4}
+    <section
+      class="card-grid"
+      style={`--card-min-size: ${$draft.cardSize.booster}px;`}
+      use:shortcuts
+      on:action:zoomin={() => changeCardSize(draft, 'booster')}
+      on:action:zoomout={() => changeCardSize(draft, 'booster', -10)}
+    >
+      {#each byId($draft.boosters[0]) as card, index (index)}
+        <Card
+          {card}
+          showTopText={pickHint(card)}
+          onpreview={togglePopup}
+          onprimary={() => boosterCardClick(index)}
+          showCount={false}
+          showAlts={false}
+          dimAbsent={false}
+          showBan={false}
+          card_list={$draft.boosters[0]}
+        />
+      {/each}
+    </section>
+    <hr />
   {/if}
 
-  <section
-    class="content"
-    use:shortcuts={{ keyboard: true }}
-    on:action:close={() => {
-      if (!$popupStore.isOpen) {
-        stopDraft()
-      }
-    }}
-  >
-    {#if $draft.step === 4}
-      <section
-        class="card-grid"
-        style={`--card-min-size: ${$draft.cardSize.booster}px;`}
-        use:shortcuts
-        on:action:zoomin={() => incSize('booster')}
-        on:action:zoomout={() => decSize('booster')}
-      >
-        {#each byId($draft.boosters[0]) as card, index (index)}
+  {#key visible_deck}
+    <section
+      id="own-cards"
+      class="card-grid"
+      style={`--card-min-size: ${$draft.step === 4 ? $draft.cardSize.draftdeck : $draft.cardSize.deck}px`}
+      use:shortcuts
+      on:action:zoomin={() => changeCardSize(draft, $draft.step === 4 ? 'draftdeck' : 'deck')}
+      on:action:zoomout={() => changeCardSize(draft, $draft.step === 4 ? 'draftdeck' : 'deck', -10)}
+    >
+      {#each byId(visible_deck) as card, index (index)}
+        <div use:sortable={{ update: deckCardDragUpdate }}>
           <Card
-            {card}
             showTopText={pickHint(card)}
+            card={($draft.step === 4 && $draft.show_score === '2' && $draft.boosters[0].length !== 1) ? {number: "../back", alt: ""} : card}
             onpreview={togglePopup}
-            onprimary={() => boosterCardClick(index)}
+            onprimary={() => deckCardClick(index)}
             showCount={false}
             showAlts={false}
             dimAbsent={false}
             showBan={false}
-            card_list={$draft.boosters[0]}
+            noTap={true}
+            card_list={$draft.own_cards}
           />
-        {/each}
-      </section>
-      <hr />
-    {/if}
-
-    {#key visible_deck}
-      <section
-        id="own-cards"
-        class="card-grid"
-        style={`--card-min-size: ${$draft.step === 4 ? $draft.cardSize.draftdeck : $draft.cardSize.deck}px`}
-        use:shortcuts
-        on:action:zoomin={() => incSize('deck')}
-        on:action:zoomout={() => decSize('deck')}
-      >
-        {#each byId(visible_deck) as card, index (index)}
-          <div use:sortable={{ update: deckCardDragUpdate }}>
-            <Card
-              showTopText={pickHint(card)}
-              card={($draft.step === 4 && $draft.show_score === '2' && $draft.boosters[0].length !== 1) ? {number: "../back", alt: ""} : card}
-              onpreview={togglePopup}
-              onprimary={() => deckCardClick(index)}
-              showCount={false}
-              showAlts={false}
-              dimAbsent={false}
-              showBan={false}
-              noTap={true}
-              card_list={$draft.own_cards}
-            />
-          </div>
-        {/each}
-      </section>
-    {/key}
-
-    {#if $draft.step === 5 && $draft.look_at === null}
-      <hr />
-      {#key $draft.side}
-        <div style="min-height: 80vw;">
-          <section
-            id="side"
-            class="card-grid"
-            style={`--card-min-size: ${$draft.cardSize.side}px;`}
-            use:shortcuts
-            on:action:zoomin={() => incSize('side')}
-            on:action:zoomout={() => decSize('side')}
-          >
-            {#each byId($draft.side) as card, index (index)}
-              <div use:sortable={{ store: draft, key: 'side' }}>
-                <Card
-                  {card}
-                  showTopText={pickHint(card)}
-                  onpreview={togglePopup}
-                  onprimary={() => sideCardClick(index)}
-                  showCount={false}
-                  showAlts={false}
-                  dimAbsent={false}
-                  showBan={false}
-                  noTap={true}
-                  card_list={$draft.side}
-                />
-              </div>
-            {/each}
-          </section>
         </div>
-      {/key}
-    {/if}
-  </section>
+      {/each}
+    </section>
+  {/key}
+
+  {#if $draft.step === 5 && $draft.look_at === null}
+    <hr />
+    {#key $draft.side}
+      <div style="min-height: 80vw;">
+        <section
+          id="side"
+          class="card-grid"
+          style={`--card-min-size: ${$draft.cardSize.side}px;`}
+          use:shortcuts
+          on:action:zoomin={() => changeCardSize(draft, 'side')}
+          on:action:zoomout={() => changeCardSize(draft, 'side', -10)}
+        >
+          {#each byId($draft.side) as card, index (index)}
+            <div use:sortable={{ store: draft, key: 'side' }}>
+              <Card
+                {card}
+                showTopText={pickHint(card)}
+                onpreview={togglePopup}
+                onprimary={() => sideCardClick(index)}
+                showCount={false}
+                showAlts={false}
+                dimAbsent={false}
+                showBan={false}
+                noTap={true}
+                card_list={$draft.side}
+              />
+            </div>
+          {/each}
+        </section>
+      </div>
+    {/key}
+  {/if}
+</section>
 {/if}
 
 <Popup type="deck" />

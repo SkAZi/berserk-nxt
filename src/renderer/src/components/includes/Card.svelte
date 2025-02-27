@@ -63,7 +63,7 @@
   {#if card.ban && showBan}<img alt="ban" class="ban" src={banURL} />{/if}
   <div class="card__translater" class:with_count={showCount} {draggable}>
     {#if ondelete}
-      <a class="deck-delete nodrag" on:click|stopPropagation={ondelete}>&cross;</a>
+      <a href={"#"} class="deck-delete nodrag" on:click|preventDefault|stopPropagation={ondelete}>&cross;</a>
     {/if}
     {#if tags && tags.length > 0}<div class="tags">
         {#each $user_decks['tags'] as tag}{#if tags.includes(tag)}<div>

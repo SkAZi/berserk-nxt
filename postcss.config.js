@@ -1,5 +1,5 @@
 module.exports = {
-  syntax: "postcss-scss",
+  syntax: 'postcss-scss',
   map: false,
   plugins: {}
 }

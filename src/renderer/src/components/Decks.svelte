@@ -6,10 +6,10 @@
 
   import { sortable, arrange } from '../utils/sortable.js';
 
-  import { popupStore, togglePopup, toggleAside, setDeckId, setSecondLevelMenu, loader, deckEditMode, filterAside } from '../stores/interface.js';
+  import { popupStore, togglePopup, toggleAside, setDeckId, setSecondLevelMenu, loader, deckEditMode, filterAside, changeCardSize } from '../stores/interface.js';
   import { shortcuts } from '../utils/shortcuts.js';
 
-  import { byId } from '../stores/cards.js';
+  import { collectColors } from '../stores/cards.js';
   import { option_set, user_decks, settings, settings_loaded } from '../stores/user_data.js';
   import { decks_driver } from '../stores/help.js';
 
@@ -68,27 +68,6 @@
       return {...$user_decks, decks: $user_decks['decks']};
     });
     setDeckId(null)
-  }
-
-  function incSize() {
-    options.update(($options) => {
-      let newSize = Math.min($options.cardSize + 10, 300)
-      return {...$options, cardSize: newSize}
-    })
-  }
-
-  function decSize() {
-    options.update(($options) => {
-      let newSize = Math.max($options.cardSize - 10, 80)
-      return {...$options, cardSize: newSize}
-    })
-  }
-
-  function collectColors(deck_cards) {
-    return [...deck_cards.reduce((ret, card_id) => {
-      ret.add(byId(card_id)?.color);
-        return ret;
-      }, new Set())].sort((a, b) => a - b);
   }
 
   function handleFilterChange(value, checked, type) {
@@ -195,7 +174,7 @@
   <section class="content">
     {#key $user_decks['decks']}
     <section class="card-grid decks driver-decks" style={`--card-min-size: ${$options.cardSize}px`} use:arrange={options}
-        use:shortcuts={{ keyboard: true }} on:action:number={setTag} on:action:zoomin={incSize} on:action:zoomout={decSize}>
+        use:shortcuts={{ keyboard: true }} on:action:number={setTag} on:action:zoomin={()=> changeCardSize(options, 'cardSize')} on:action:zoomout={()=> changeCardSize(options, 'cardSize', -10)}>
         <div class="diver-deck-edit">
           <button on:click={(_e) => { newDeck() }} class="card-drop secondary" style="width: 100%; border: none; border-radius: var(--card-radius); font-size: 300%; color: #DFE3EB; margin-top: 5px;">
             +

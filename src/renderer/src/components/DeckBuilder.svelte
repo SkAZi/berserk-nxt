@@ -12,7 +12,7 @@
 
   import { option_set, user_decks, filteredSortedCards } from '../stores/user_data.js';
   import { deckbuilder_driver } from '../stores/help.js';
-  import { byId, groupCards, ungroupCards, statistics } from '../stores/cards.js';
+  import { byId, groupCards, ungroupCards, statistics, collectColors, countOfType } from '../stores/cards.js';
 
   import Card from './includes/Card.svelte'
   import Filter from './includes/Filter.svelte'
@@ -65,25 +65,11 @@
     });
   }
 
-  function collectColors(deck_cards) {
-    return [...deck_cards.reduce((ret, card_id) => {
-      ret.add(byId(card_id)?.color);
-        return ret;
-      }, new Set())].sort((a, b) => a - b);
-  }
-
   function nextOrder() {
     options.update($options => {
       const nextIndex = (($options.order || 0) + 1) % orders.length;
       return {...$options, order: nextIndex};
     });
-  }
-
-
-  function count(deck_cards, key, value) {
-    return deck_cards.reduce((acc, card_id) => {
-      return acc + ((byId(card_id) && byId(card_id)[key] === value) ? 1 : 0);
-    }, 0)
   }
 
   function removeOne(deck_id, card_id) {
@@ -255,7 +241,7 @@
   <section>
     <div style="display: flex; justify-content: space-between;">
      <input type="text" value={deckName} on:blur={updateDeckName} class="diver-deck-name" />
-     <a class="driver-deck-order" use:shortcuts on:action:primary={nextOrder} style="margin: 7px 2px 20px 7px;" data-tooltip="{orderNames[order]}" data-placement="left">
+     <a href={"#"} class="driver-deck-order" use:shortcuts on:action:primary={nextOrder} style="margin: 7px 2px 20px 7px;" data-tooltip="{orderNames[order]}" data-placement="left">
        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="fill: #e8dff2;"><path d="M6.227 11h11.547c.862 0 1.32-1.02.747-1.665L12.748 2.84a.998.998 0 0 0-1.494 0L5.479 9.335C4.906 9.98 5.364 11 6.227 11zm5.026 10.159a.998.998 0 0 0 1.494 0l5.773-6.495c.574-.644.116-1.664-.747-1.664H6.227c-.862 0-1.32 1.02-.747 1.665l5.773 6.494z"></path></svg>
      </a>
     </div>
@@ -276,7 +262,7 @@
          </div>
          {:else}
          <div data-cardid={count} class={`card_line bg-0 rarity-0`} use:shortcuts={{keyboard: true}}
-              on:action:primary={() => removeOne(deck_id, count)}>
+              on:action:primary={() => removeOne(deck_id, null)}>
             <span class="count">
               x<b style="color: #D93526">?</b>
             </span>
@@ -289,8 +275,8 @@
     <div class="deck_stats">
       <span class="colors">{#each collectColors($user_decks['decks'][deck_id].cards) as color}<span class={`color color-${color}`}></span>{/each}</span>
       <span class="elite">
-        <span class="elite-gold">{count($user_decks['decks'][deck_id].cards, 'elite', true)}</span>
-        <span class="elite-silver">{count($user_decks['decks'][deck_id].cards, 'elite', false)}</span>
+        <span class="elite-gold">{countOfType($user_decks['decks'][deck_id].cards, 'elite', true)}</span>
+        <span class="elite-silver">{countOfType($user_decks['decks'][deck_id].cards, 'elite', false)}</span>
       </span>
       <h4><span style={$user_decks['decks'][deck_id].cards.length != 30 ? "color: #D93526" : ""}>{$user_decks['decks'][deck_id].cards.length}</span> / 30</h4>
     </div>

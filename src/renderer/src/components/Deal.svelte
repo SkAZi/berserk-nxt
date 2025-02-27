@@ -172,45 +172,43 @@
     return [goldCrystals, silverCrystals];
   }
 
+  function checkLegality(field) {
+    const cardCounts = {};
+    const results = [];
+    let flyCost = 0
+    let land = 0
+    byId(field).forEach(card => {
+      if (!card) return results.push([null, true]);
+      if (!cardCounts[card.id]) cardCounts[card.id] = { count: 0, uniq: card.uniq, horde: card.horde };
+      cardCounts[card.id].count += 1;
+      if(card.type === 1) flyCost += card.cost;
+      if(card.type === 5) land += 1;
+      let legal = true;
+      if (cardCounts[card.id].uniq && cardCounts[card.id].count > 1) legal = false;
+      else if (!cardCounts[card.id].horde && cardCounts[card.id].count > 3) legal = false;
+      else if (cardCounts[card.id].horde && cardCounts[card.id].count > 6) legal = false;
+      else if (flyCost > 15 && card.type === 1) legal = false;
+      else if (land > 1 && card.type === 5) legal = false;
+      if (card.ban) legal = false;
+      return results.push([card.id, legal]);
+    });
 
+    return results;
+  }
 
-function checkLegality(field) {
-  const cardCounts = {};
-  const results = [];
-  let flyCost = 0
-  let land = 0
-  byId(field).forEach(card => {
-    if (!card) return results.push([null, true]);
-    if (!cardCounts[card.id]) cardCounts[card.id] = { count: 0, uniq: card.uniq, horde: card.horde };
-    cardCounts[card.id].count += 1;
-    if(card.type === 1) flyCost += card.cost;
-    if(card.type === 5) land += 1;
-    let legal = true;
-    if (cardCounts[card.id].uniq && cardCounts[card.id].count > 1) legal = false;
-    else if (!cardCounts[card.id].horde && cardCounts[card.id].count > 3) legal = false;
-    else if (cardCounts[card.id].horde && cardCounts[card.id].count > 6) legal = false;
-    else if (flyCost > 15 && card.type === 1) legal = false;
-    else if (land > 1 && card.type === 5) legal = false;
-    if (card.ban) legal = false;
-    return results.push([card.id, legal]);
-  });
-
-  return results;
-}
-
-function swapItems(drag_index, index) {
-  options.update(($options) => {
-    let new_own_cards = $options['field']
-    if(index >= new_own_cards.length) return $options;
-    const dragged = new_own_cards[drag_index];
-    new_own_cards[drag_index] = new_own_cards[index];
-    new_own_cards[index] = dragged;
-    const dmeta = field_meta[drag_index];
-    field_meta[drag_index] = field_meta[index];
-    field_meta[index] = dmeta;
-    return {...$options, field: new_own_cards}
-  })
-}
+  function swapItems(drag_index, index) {
+    options.update(($options) => {
+      let new_own_cards = $options['field']
+      if(index >= new_own_cards.length) return $options;
+      const dragged = new_own_cards[drag_index];
+      new_own_cards[drag_index] = new_own_cards[index];
+      new_own_cards[index] = dragged;
+      const dmeta = field_meta[drag_index];
+      field_meta[drag_index] = field_meta[index];
+      field_meta[index] = dmeta;
+      return {...$options, field: new_own_cards}
+    })
+  }
 </script>
 
 
@@ -280,7 +278,7 @@ function swapItems(drag_index, index) {
       <h6 style="margin-bottom: .5em; overflow: hidden; white-space: nowrap; text-overflow: ellipsis;" class="low-profile-hidden">{deckName}</h6>
       <div style="display: flex; justify-content: space-between;">
         <button class="outline" style="width: 100%; margin-bottom: 1em;" use:shortcuts on:action:primary={() => { mulligan(); }}>Муллиган</button>
-        <a use:shortcuts on:action:primary={nextOrder} style="margin: 7px 2px 20px 7px;" data-tooltip="{orderNames[order]}" data-placement="left">
+        <a href={"#"} use:shortcuts on:action:primary={nextOrder} style="margin: 7px 2px 20px 7px;" data-tooltip="{orderNames[order]}" data-placement="left">
          <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="fill: #e8dff2;"><path d="M6.227 11h11.547c.862 0 1.32-1.02.747-1.665L12.748 2.84a.998.998 0 0 0-1.494 0L5.479 9.335C4.906 9.98 5.364 11 6.227 11zm5.026 10.159a.998.998 0 0 0 1.494 0l5.773-6.495c.574-.644.116-1.664-.747-1.664H6.227c-.862 0-1.32 1.02-.747 1.665l5.773 6.494z"></path></svg>
         </a>
       </div>
@@ -300,7 +298,7 @@ function swapItems(drag_index, index) {
            </div>
            {/if}
          {/each}
-        <p style="margin: 10px 0 10px 35px; font-size: 85%"><a use:shortcuts on:action:primary={()=> { show_other = !show_other }}>Остальные карты</a></p>
+        <p style="margin: 10px 0 10px 35px; font-size: 85%"><a href={"#"} use:shortcuts on:action:primary={()=> { show_other = !show_other }}>Остальные карты</a></p>
         {#if show_other}
           {#each grouppedDeck as [card, count]}
              {#if card}

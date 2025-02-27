@@ -91,7 +91,7 @@
     </ul>
     <ul class="driver-second-menu">
       {#each Object.entries($secondLevelMenu?.menu) as [name, action]}
-      <li><a use:shortcuts on:action:primary={(e) => { action(e); toggleMainMenu(false) }}>{name}</a></li>
+      <li><a href={"#"} use:shortcuts on:action:primary={(e) => { action(e); toggleMainMenu(false) }}>{name}</a></li>
       {/each}
     </ul>
   </nav>
@@ -103,15 +103,15 @@
     <li>
       <strong>Коллекция</strong>
       <ul>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('new-collection') }}>Новая коллекция</a></li>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, true, false) }}>Загрузить коллекцию</a></li>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('save-collection') }}>Сохранить коллекцию</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('new-collection') }}>Новая коллекция</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, true, false) }}>Загрузить коллекцию</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('save-collection') }}>Сохранить коллекцию</a></li>
         <li><hr /></li>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, false, false) }}>Добавить в коллекцию</a></li>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, false, true) }}>Убрать из коллекции</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, false, false) }}>Добавить в коллекцию</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, false, true) }}>Убрать из коллекции</a></li>
         <li><hr /></li>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('reset-selected') }}>Очистить избранное</a></li>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('export-selected') }}>Экспорт избранного</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('reset-selected') }}>Очистить избранное</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('export-selected') }}>Экспорт избранного</a></li>
         <!-- li><hr /></!li>
         <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('export-filtered', $filteredSortedCards) }}>Экспорт отфильтрованного</a></li -->
       </ul>
@@ -119,19 +119,19 @@
     <li>
       <strong>Колоды</strong>
       <ul>
-        <li><a use:shortcuts on:action:primary={() => newDeck()}>Новая колода</a></li>
-        <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('load-deck')}}>Загрузить колоду</a></li>
-        <li><a use:shortcuts on:action:primary={() => { togglePrintDeckList() }}>Распечатать деклист</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => newDeck()}>Новая колода</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('load-deck')}}>Загрузить колоду</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { togglePrintDeckList() }}>Распечатать деклист</a></li>
         {#if $currentDeck.deck_id !== null && ($router.path == '/app/deckbuilder' || $router.path == '/app/deal')}
         {@const deck_id = $currentDeck.deck_id}
-        <li><a use:shortcuts on:action:primary={() => { cloneDeck(deck_id) }}>Дублировать колоду</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { cloneDeck(deck_id) }}>Дублировать колоду</a></li>
         <li><hr /></li>
-        <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'brs'); }}>Сохранить колоду</a></li>
-        <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'proberserk'); }}>Экспорт в TXT (ProBerserk)</a></li>
-        <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', byId($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'tts'); }}>Экспорт в TTS</a></li>
-        <li><a use:shortcuts on:action:primary={() => { takeScreenshot('#deck-view', $user_decks['decks'][deck_id].name, groupCards($user_decks['decks'][deck_id].cards, 'asis')); }}>Декшот JPEG</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'brs'); }}>Сохранить колоду</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'proberserk'); }}>Экспорт в TXT (ProBerserk)</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', byId($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'tts'); }}>Экспорт в TTS</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { takeScreenshot('#deck-view', $user_decks['decks'][deck_id].name, groupCards($user_decks['decks'][deck_id].cards, 'asis')); }}>Декшот JPEG</a></li>
         <li><hr /></li>
-        <li><a use:shortcuts on:action:primary={() => { removeDeck(deck_id) }}>Удалить колоду</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { removeDeck(deck_id) }}>Удалить колоду</a></li>
         {/if}
       </ul>
     </li>
@@ -139,8 +139,8 @@
       <strong>Приложение</strong>
       <ul>
         <!-- li><a use:shortcuts on:action:primary={() => {  }}>Настройки</a></li -->
-        <li><a use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('start-tour') }}>Короткая справка</a></li>
-        <li><a use:shortcuts on:action:primary={toggleAbout}>О программе</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('start-tour') }}>Короткая справка</a></li>
+        <li><a href={"#"} use:shortcuts on:action:primary={toggleAbout}>О программе</a></li>
       </ul>
     </li>
   </ul>

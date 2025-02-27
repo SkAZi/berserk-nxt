@@ -1132,8 +1132,10 @@ section.card-grid h3{
 }
 
 .draft_form {
-  max-width: 700px;
-  margin: 0 auto;
+  min-width: 350px;
+  width: 50%;
+  max-width: 50%;
+  margin: 0 auto 0 20px;
   position: relative;
   z-index: 1;
 }
@@ -1516,6 +1518,15 @@ section.card-grid h3{
   }
 }
 
+@media (min-width: 768px) {
+  dialog.main-popup:not(.modal-fs, .modal-xlg, .modal-lg, .modal-md, .modal-sm) > article {
+      max-width: 900px !important;
+  }
+  dialog.main-popup:not(.modal-fs, .modal-xlg, .modal-lg, .modal-md, .modal-sm) > article.noside {
+      max-width: 700px !important;
+  }
+}
+
 .celebration::after {
     position: absolute;
     content: "";
@@ -1527,7 +1538,7 @@ section.card-grid h3{
     filter: blur(15px);
     background: linear-gradient(to left, #ff5409, #ffa508, #ffef2e, #fffb85, #fffbce, #fffb85, #ffef2e, #ffa508, #ff5409);
     background-size: 200% 200%;
-    animation: animateGlow 1.25s linear infinite;
+    animation: animateGlow 1.25s linear , fadein 1s linear forwards;
     bottom: -50px;
     border-radius: 50px;
 }
@@ -1544,30 +1555,85 @@ section.card-grid h3{
 
 
 #app.ellion {
-    background: url(./img/ellion_bg.jpg) no-repeat center center;
+    background: url(./img/ellion_bg.jpg) no-repeat center top;
     background-size: cover;
 }
 
 #ellion {
     cursor: pointer;
-    top: 5px;
-    left: -2%;
+    top: -20px;
+    right: 0;
     position: absolute;
-    width: 29%;
+    min-width: 300px;
+    width: 50%;
     height: 800px;
     background: url(./img/ellion.png) no-repeat center center;
     background-size: contain;
     z-index: 0;
 }
 
-#ellion-text {
-    cursor: pointer;
-    top: 30px;
-    right: 0;
-    position: absolute;
-    width: 23%;
-    height: 800px;
-    background: url(./img/ellion_text.png) no-repeat center center;
-    background-size: contain;
-    z-index: 0;
+.ag-sparks {
+  top: 0;
+  bottom: 0;
+  left: 0;
+  right: 0;
+  background: url(./img/sparks.png) repeat-y 0 0;
+  animation: an-sparks 111s linear infinite;
+  position: absolute;
+  pointer-events: none;
+}
+
+.ag-sparks:before,
+.ag-sparks:after {
+  content: "";
+  width: 100%;
+  background-image: url(./img/sparks.png);
+  background-position: -50% 0;
+  background-repeat: repeat-y;
+
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+}
+.ag-sparks:before {
+  transform: scaleX(-1);
+  background-position: 20% 0;
+  animation: an-sparks 47s linear infinite, fadein 1.4s linear forwards;
+}
+.ag-sparks:after {
+  background-position: 50% 0;
+  background-size: 120% 120%;
+  animation: an-sparks2 77s linear infinite, fadein 2.8s linear forwards;
+  z-index: 1001;
+  transform: scaleX(-1);
+  pointer-events: none;
+}
+
+@keyframes fadein {
+  from {
+    opacity: 0;
+  }
+  to {
+    opacity: .8;
+  }
+}
+
+@keyframes an-sparks {
+  from {
+    background-position-y: -5000%;
+  }
+  to {
+    background-position-y: 0;
+  }
+}
+
+@keyframes an-sparks2 {
+  from {
+    background-position-y: -6000%;
+  }
+  to {
+    background-position-y: 0;
+  }
 }

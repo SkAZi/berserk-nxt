@@ -18,6 +18,7 @@
   let card = null
   let deck = null
   let card_list = []
+  let effect = null
 
   let count
   $: count = $user_cards[card?.id]?.count || {"": 0}
@@ -30,6 +31,7 @@
     card = $store.card;
     deck = $store.deck;
     card_list = $store.card_list || [];
+    effect = $store.effect || null;
   })
 
   function changeCount(e, alt = ""){
@@ -108,7 +110,7 @@
 </script>
 
 {#if open}
-<dialog open class="main-popup" transition:fade={{ duration: 100 }}
+<dialog open class="main-popup" transition:fade={{ duration: effect ? 700 : 100 }}
     use:shortcuts={{keyboard: true}}
     on:action:primary={() => { if(click){ click=false } else { togglePopup() } }}
     on:action:preview={togglePopup}
@@ -117,16 +119,21 @@
     on:action:prev={prevCard}
     on:action:next={nextCard}
   >
+  {#if effect === 'sparcles'}
+    <div class="ag-sparks"></div>
+  {/if}
   {#if card_list.length}
-  <a class="left" on:click|stopPropagation={prevCard} style="color: #3d475c; position: absolute; left: .5em; text-decoration: none; font-size: 400%">&laquo;</a>
-  <a class="right" on:click|stopPropagation={nextCard} style="color: #3d475c; position: absolute; right: .5em; text-decoration: none; font-size: 400%">&raquo;</a>
+  <a href={"#"} class="left" on:click|preventDefault|stopPropagation={prevCard} style="color: #3d475c; position: absolute; left: .5em; text-decoration: none; font-size: 400%">&laquo;</a>
+  <a href={"#"} class="right" on:click|preventDefault|stopPropagation={nextCard} style="color: #3d475c; position: absolute; right: .5em; text-decoration: none; font-size: 400%">&raquo;</a>
   {/if}
   <article class:noside={type !== 'collection'}>
     {#if card}
     <div class="card-wrapper">
       <div class="card alt-{card.alt}" class:featured={$featured[""].includes(card?.id)}>
-        <a class="feature" class:collection={type === 'collection'} style={`color: ${$featured[""].includes(card?.id) ?  '#7540bf' : '#fff'}`}
+        {#if !effect}
+        <a href={"#"} class="feature" class:collection={type === 'collection'} style={`color: ${$featured[""].includes(card?.id) ?  '#7540bf' : '#fff'}`}
           use:shortcuts on:action:primary={() => { click=true; toggleFeatured(card); }}>✓</a>
+        {/if}
         {#if card.ban}<img class="ban" class:small={type !== 'count'} src={banURL} alt="" />{/if}
         <span class="card__rotator">
           <img
@@ -183,7 +190,7 @@
               {/each}
             </tbody>
           </table>
-          <a use:shortcuts on:action:primary={toggleProMode}><em>Простой режим</em></a>
+          <a href={"#"} use:shortcuts on:action:primary={toggleProMode}><em>Простой режим</em></a>
         {:else}
         <label>
           Количество:
@@ -209,7 +216,7 @@
           Цена:
           <input type="number" name="cost" id="cost" min="0" value={costs[""] || null} on:input={changeCost} />
         </label>
-        <a use:shortcuts on:action:primary={toggleProMode}><em>Подробный режим</em></a>
+        <a href={"#"} use:shortcuts on:action:primary={toggleProMode}><em>Подробный режим</em></a>
         {/if}
         <br />
       </section>
