@@ -13,7 +13,7 @@
     "typecheck_full": "npm run typecheck:node && npm run svelte-check",
     "typecheck": "npm run typecheck:node && npm run svelte-check",
     "start": "electron-vite preview",
-    "dev": "cp ai/dist/server.mac.arm64 resources/server.exe && electron-vite dev && rm resources/server.exe",
+    "dev": "cp ai/dist/server.mac.arm64 resources/server && cp ai/lib/mac-arm64/* resources/ && electron-vite dev && rm resources/server resources/*.dylib",
     "web:dev": "vite dev --config vite.config.web.mjs",
     "build": "npm run typecheck && electron-vite build",
     "postinstall": "electron-builder install-app-deps",
@@ -75,6 +75,6 @@
     "tslib": "^2.6.2",
     "typescript": "^5.3.3",
     "vite": "^5.0.12",
-    "vite-plugin-static-copy": "^1.0.1"
+    "vite-plugin-static-copy": "^2.2.0"
   }
 }
