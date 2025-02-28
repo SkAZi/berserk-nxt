@@ -20,6 +20,27 @@ button, [type=submit], [type=reset], [type=button], [type=file]::file-selector-b
   --pico-color: white;
 }
 
+button.a, button.a:active, button.a:focus, button.a:hover {
+  padding: 0;
+  margin: 0;
+  border: none;
+  background: none;
+  cursor: pointer !important;
+  outline: none !important;
+  box-shadow: none !important;
+}
+
+button.a:hover {
+  color: #CFD5E2;
+}
+
+details.dropdown li button {
+  display: block;
+  width: 100%;
+  text-align: left;
+  color: #E0E3E7 !important;
+}
+
 :root {
   --toastContainerTop: auto;
   --toastContainerLeft: 0;
@@ -79,6 +100,10 @@ header > nav li {
   margin-right: 10px;
   padding: 10px 15px;
   font-size: 85%;
+}
+
+header > nav li button.a {
+  font-size: 90%;
 }
 
 nav li :where(a, [role=link]){
@@ -630,9 +655,9 @@ main > aside.stats dd {
   background-color: var(--pico-modal-overlay-background-color);
 }
 
-.main-menu a.shortcuts, a.force-shortcuts {
+.main-menu button.shortcuts, button.force-shortcuts {
   text-decoration: none;
-  border-bottom: 1px dashed #ccc;
+  border-bottom: 1px dashed #ccc !important;
 }
 
 .main-menu > ul {
@@ -1110,7 +1135,7 @@ section.card-grid h3{
   opacity: 0.3;
 }
 
-.card-grid .card__translater a.deck-delete {
+.card-grid .card__translater button.deck-delete {
   transition: transform 0.4s ease, opacity 0.4s ease;
   text-decoration: none;
   position: absolute;
@@ -1135,7 +1160,7 @@ section.card-grid h3{
   min-width: 350px;
   width: 50%;
   max-width: 50%;
-  margin: 0 auto 0 20px;
+  margin: 0 auto;
   position: relative;
   z-index: 1;
 }
@@ -1283,7 +1308,7 @@ section.card-grid h3{
     outline: 5px solid #7540bf;
   }
 
-  dialog.main-popup a.feature {
+  dialog.main-popup button.feature {
     font-size: 250%;
     transition: color 0.4s ease;
     position: absolute;
@@ -1552,22 +1577,31 @@ section.card-grid h3{
   }
 }
 
-
-
 #app.ellion {
-    background: url(./img/ellion_bg.jpg) no-repeat center top;
+    background: url(./img/ellion_bg.jpg) no-repeat center center;
     background-size: cover;
 }
 
 #ellion {
     cursor: pointer;
-    top: -20px;
-    right: 0;
+    top: 5px;
+    left: -2%;
     position: absolute;
-    min-width: 300px;
-    width: 50%;
+    width: 29%;
     height: 800px;
     background: url(./img/ellion.png) no-repeat center center;
+    background-size: contain;
+    z-index: 0;
+}
+
+#ellion-text {
+    cursor: pointer;
+    top: 30px;
+    right: 0;
+    position: absolute;
+    width: 23%;
+    height: 800px;
+    background: url(./img/ellion_text.png) no-repeat center center;
     background-size: contain;
     z-index: 0;
 }

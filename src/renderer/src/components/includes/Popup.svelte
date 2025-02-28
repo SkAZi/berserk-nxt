@@ -123,16 +123,16 @@
     <div class="ag-sparks"></div>
   {/if}
   {#if card_list.length}
-  <a href={"#"} class="left" on:click|preventDefault|stopPropagation={prevCard} style="color: #3d475c; position: absolute; left: .5em; text-decoration: none; font-size: 400%">&laquo;</a>
-  <a href={"#"} class="right" on:click|preventDefault|stopPropagation={nextCard} style="color: #3d475c; position: absolute; right: .5em; text-decoration: none; font-size: 400%">&raquo;</a>
+  <button class="a left" on:click|preventDefault|stopPropagation={prevCard} style="color: #3d475c; position: absolute; left: .5em; text-decoration: none; font-size: 400%">&laquo;</button>
+  <button class="a right" on:click|preventDefault|stopPropagation={nextCard} style="color: #3d475c; position: absolute; right: .5em; text-decoration: none; font-size: 400%">&raquo;</button>
   {/if}
   <article class:noside={type !== 'collection'}>
     {#if card}
     <div class="card-wrapper">
       <div class="card alt-{card.alt}" class:featured={$featured[""].includes(card?.id)}>
         {#if !effect}
-        <a href={"#"} class="feature" class:collection={type === 'collection'} style={`color: ${$featured[""].includes(card?.id) ?  '#7540bf' : '#fff'}`}
-          use:shortcuts on:action:primary={() => { click=true; toggleFeatured(card); }}>✓</a>
+        <button class="a feature" class:collection={type === 'collection'} style={`color: ${$featured[""].includes(card?.id) ?  '#7540bf' : '#fff'}`}
+          use:shortcuts on:action:primary={() => { click=true; toggleFeatured(card); }}>✓</button>
         {/if}
         {#if card.ban}<img class="ban" class:small={type !== 'count'} src={banURL} alt="" />{/if}
         <span class="card__rotator">
@@ -190,7 +190,7 @@
               {/each}
             </tbody>
           </table>
-          <a href={"#"} use:shortcuts on:action:primary={toggleProMode}><em>Простой режим</em></a>
+          <button class="a" use:shortcuts on:action:primary={toggleProMode}><em>Простой режим</em></button>
         {:else}
         <label>
           Количество:
@@ -216,7 +216,7 @@
           Цена:
           <input type="number" name="cost" id="cost" min="0" value={costs[""] || null} on:input={changeCost} />
         </label>
-        <a href={"#"} use:shortcuts on:action:primary={toggleProMode}><em>Подробный режим</em></a>
+        <button class="a" use:shortcuts on:action:primary={toggleProMode}><em>Подробный режим</em></button>
         {/if}
         <br />
       </section>

@@ -208,7 +208,7 @@
         {/if}
     </fieldset>
     <div class="driver-other-filter">
-    <p><a href={"#"} class="force-shortcuts" use:shortcuts on:action:primary={resetFilters} tabindex="0">Сбросить фильтры</a></p>
+    <p><button class="a force-shortcuts" use:shortcuts on:action:primary={resetFilters} tabindex="0">Сбросить фильтры</button></p>
     {#if options_name == 'collection_options'}
     <details bind:open={$options.details_collection}>
       <summary>В коллекции</summary>

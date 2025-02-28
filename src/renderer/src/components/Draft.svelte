@@ -444,7 +444,7 @@ function getDeckName(){
 </script>
 
 {#if $draft.step <= 3}
-  <a href={"#"} on:click|preventDefault={() => togglePopup(byId("50140"), null, 'card', 'sparcles')} id="ellion">&nbsp;</a>
+  <a href="https://t.me/+w0mT8aSk6xVlMTQ6" target="_blank" id="ellion">&nbsp;</a>
   <section
     class="content draft_form"
     use:shortcuts={{ keyboard: true }}
@@ -598,6 +598,7 @@ function getDeckName(){
       {/if}
     </article>
   </section>
+  <a href="https://t.me/+w0mT8aSk6xVlMTQ6" target="_blank" id="ellion-text"></a>
 {:else}
 {#if $draft.step === 5}
   <aside class="right">
@@ -605,9 +606,9 @@ function getDeckName(){
       <details class="dropdown driver-actions" id="select-cards-action">
         <summary>{#if $draft.look_at === null}Моя колода{:else}Колода бота #{$draft.look_at + 1}{/if}</summary>
         <ul>
-          <li><a href={"#"} on:click|preventDefault={() => { draft.set({...$draft, look_at: null}); document.getElementById('select-cards-action').removeAttribute('open') }}>Моя колода</a></li>
+          <li><button class="a" on:click|preventDefault={() => { draft.set({...$draft, look_at: null}); document.getElementById('select-cards-action').removeAttribute('open') }}>Моя колода</button></li>
           {#each Array($draft.players-1) as _, i}
-            <li><a href={"#"} on:click|preventDefault={() => { draft.set({...$draft, look_at: i}); document.getElementById('select-cards-action').removeAttribute('open') }}>Колода бота #{i + 1}</a></li>
+            <li><button class="a" on:click|preventDefault={() => { draft.set({...$draft, look_at: i}); document.getElementById('select-cards-action').removeAttribute('open') }}>Колода бота #{i + 1}</button></li>
           {/each}
         </ul>
       </details>
@@ -642,30 +643,30 @@ function getDeckName(){
         <summary>Отсортировать</summary>
         <ul>
           <li>
-            <a href={"#"}
+            <button class="a"
               use:shortcuts
               on:action:primary={() => {
                 document.getElementById('own-cards-action').removeAttribute('open')
                 sortDraft('color')
-              }}>Стихия</a
+              }}>Стихия</button
             >
           </li>
           <li>
-            <a href={"#"}
+            <button class="a"
               use:shortcuts
               on:action:primary={() => {
                 document.getElementById('own-cards-action').removeAttribute('open')
                 sortDraft('cost')
-              }}>Стоимость</a
+              }}>Стоимость</button
             >
           </li>
           <li>
-            <a href={"#"}
+            <button class="a"
               use:shortcuts
               on:action:primary={() => {
                 document.getElementById('own-cards-action').removeAttribute('open')
                 sortDraft('rarity')
-              }}>Редкость</a
+              }}>Редкость</button
             >
           </li>
         </ul>

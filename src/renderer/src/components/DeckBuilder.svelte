@@ -241,9 +241,9 @@
   <section>
     <div style="display: flex; justify-content: space-between;">
      <input type="text" value={deckName} on:blur={updateDeckName} class="diver-deck-name" />
-     <a href={"#"} class="driver-deck-order" use:shortcuts on:action:primary={nextOrder} style="margin: 7px 2px 20px 7px;" data-tooltip="{orderNames[order]}" data-placement="left">
+     <button class="a driver-deck-order" use:shortcuts on:action:primary={nextOrder} style="margin: 7px 2px 20px 7px;" data-tooltip="{orderNames[order]}" data-placement="left">
        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="fill: #e8dff2;"><path d="M6.227 11h11.547c.862 0 1.32-1.02.747-1.665L12.748 2.84a.998.998 0 0 0-1.494 0L5.479 9.335C4.906 9.98 5.364 11 6.227 11zm5.026 10.159a.998.998 0 0 0 1.494 0l5.773-6.495c.574-.644.116-1.664-.747-1.664H6.227c-.862 0-1.32 1.02-.747 1.665l5.773 6.494z"></path></svg>
-     </a>
+     </button>
     </div>
     <div class="decklist" class:tighter={grouppedCards.length > 21} class:tightest={grouppedCards.length > 25}
         use:shortcuts={{keyboard: true}} on:action:number={setCount} on:action:close={() => { if(!$popupStore.isOpen && document.activeElement !== document.getElementById('search')){ navigate('/app/decks') } } } on:action:undo={doUndo}>
