@@ -7,7 +7,7 @@
   import Collection from "./components/Collection.svelte";
   import DeckBuilder from "./components/DeckBuilder.svelte";
   import Draft from "./components/Draft.svelte";
-  import DraftNew from "./components/DraftNew.svelte";
+  //import DraftNew from "./components/DraftNew.svelte";
   import Deal from "./components/Deal.svelte";
   import Decks from "./components/Decks.svelte";
   import { SvelteToast } from '@zerodevx/svelte-toast'
@@ -29,7 +29,7 @@
     "/app/deckbuilder": DeckBuilder,
     "/app/deal": Deal,
     "/app/draft": Draft,
-    "/app/draftnew": DraftNew,
+    //"/app/draftnew": DraftNew,
     //"/app/table": Table,
   }
 
@@ -44,7 +44,7 @@
 
   function newDeck(new_deck){
     user_decks.update(($user_decks) => {
-      return {...$user_decks, decks: [new_deck || {"id": v4(), "name": "Новая колода", cards: [], date: Date.now(), tags: ['Констрактед']}, ...$user_decks['decks']]};
+      return {...$user_decks, decks: [new_deck || {"id": v4(), "name": "Новая колода", cards: [], side: [], date: Date.now(), tags: ['Констрактед']}, ...$user_decks['decks']]};
     });
     setDeckId(0)
     navigate(`/app/deckbuilder/`)
@@ -93,7 +93,7 @@
       <li><Link href="/" aria-current={$router.path == '/' ? 'page' : ''}>Коллекция</Link></li>
       <li class="driver-deck-build"><Link href={$currentDeck.deck_id === null || $router.path == `/app/${$deckEditMode}` ? '/app/decks' : `/app/${$deckEditMode}`} aria-current={['/app/decks','/app/deal','/app/deckbuilder'].includes($router.path) ? 'page' : ''}>Колоды</Link></li>
       <li class="driver-deck-limited"><Link href="/app/draft" aria-current={$router.path == '/app/draft' ? 'page' : ''}>Лимитед</Link></li>
-      {#if !isWeb && false}<li class="driver-deck-limited"><Link href="/app/draftnew" aria-current={$router.path == '/app/draftnew' ? 'page' : ''}>Драфт<sup>&nbsp;ß</sup></Link></li>{/if}
+      {#if !isWeb && false}<!-- li class="driver-deck-limited"><Link href="/app/draftnew" aria-current={$router.path == '/app/draftnew' ? 'page' : ''}>Драфт<sup>&nbsp;ß</sup></Link></li -->{/if}
       <!-- li class="driver-deck-table"><Link href="/app/table" aria-current={$router.path == '/app/table' ? 'page' : ''}>Стол</Link></li -->
     </ul>
     <ul class="driver-second-menu">
@@ -113,14 +113,14 @@
         <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('new-collection') }}>Новая коллекция</button></li>
         <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, true, false) }}>Загрузить коллекцию</button></li>
         <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('save-collection') }}>Сохранить коллекцию</button></li>
+        <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('export-to-csv') }}>Экспорт коллекции в CSV</button></li>
         <li><hr /></li>
         <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, false, false) }}>Добавить в коллекцию</button></li>
         <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('load-collection', null, false, true) }}>Убрать из коллекции</button></li>
         <li><hr /></li>
         <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('reset-selected') }}>Очистить избранное</button></li>
         <li><button class="a" use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('export-selected') }}>Экспорт избранного</button></li>
-        <!-- li><hr /></!li>
-        <li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('export-filtered', $filteredSortedCards) }}>Экспорт отфильтрованного</button></li -->
+        <!-- li><a use:shortcuts on:action:primary={()=> { window.electron.ipcRenderer.send('export-filtered', $filteredSortedCards) }}>Экспорт отфильтрованного</button></li -->
       </ul>
     </li>
     <li>
@@ -134,9 +134,9 @@
         <li><button class="a" use:shortcuts on:action:primary={() => { cloneDeck(deck_id) }}>Дублировать колоду</button></li>
         <li><hr /></li>
         <!-- li><button class="a" use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'brs'); }}>Сохранить колоду</button></li -->
-        <li><button class="a" use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'proberserk'); }}>Сохранить колоду (txt)</button></li>
-        <li><button class="a" use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', byId($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'tts'); }}>Экспорт в TTS</button></li>
-        <li><button class="a" use:shortcuts on:action:primary={() => { takeScreenshot('#deck-view', $user_decks['decks'][deck_id].name, groupCards($user_decks['decks'][deck_id].cards, 'asis')); }}>Декшот JPEG</button></li>
+        <li><button class="a" use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', groupCards($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'proberserk', 'Констрактед', null, null, groupCards($user_decks['decks'][deck_id].side)); }}>Сохранить колоду (txt)</button></li>
+        <li><button class="a" use:shortcuts on:action:primary={() => { window.electron.ipcRenderer.send('save-deck', byId($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'tts', 'Констрактед', null, null, byId($user_decks['decks'][deck_id].side)); }}>Экспорт в TTS</button></li>
+        <li><button class="a" use:shortcuts on:action:primary={() => { takeScreenshot('#deck-view', $user_decks['decks'][deck_id].name, groupCards($user_decks['decks'][deck_id].cards, 'asis'), groupCards($user_decks['decks'][deck_id].side, 'asis')); }}>Декшот JPEG</button></li>
         <li><hr /></li>
         <li><button class="a" use:shortcuts on:action:primary={() => { removeDeck(deck_id) }}>Удалить колоду</button></li>
         {/if}

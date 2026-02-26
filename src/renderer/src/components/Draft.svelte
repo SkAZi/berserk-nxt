@@ -52,8 +52,9 @@
   let parsedUserMetod = {}
   $: parsedUserMetod = validUserWeights(userMethod) ? JSON.parse(userMethod) : {}
 
-  let visible_deck = []
-  $: visible_deck = ($draft.look_at === null || $draft.look_at === undefined || !$draft.their_cards || !$draft.their_cards[$draft.look_at] || $draft.variant !== 'draft') ? $draft.own_cards.filter((x) => x) : $draft.their_cards[$draft.look_at].filter((x) => x)
+  let visible_deck = [], visible_own = true
+  $: visible_own = $draft.look_at === null || $draft.look_at === undefined || !$draft.their_cards || !$draft.their_cards[$draft.look_at] || $draft.variant !== 'draft'
+  $: visible_deck = visible_own ? $draft.own_cards.filter((x) => x) : $draft.their_cards[$draft.look_at].filter((x) => x)
 
   const hasPredict = window.electron.ipcRenderer.sendSync('get-haspredictor')
 
@@ -394,7 +395,7 @@
     })
   }
 
-  function saveDeck(name, cards, deal) {
+  function saveDeck(name, cards, side, deal) {
     user_decks.update(($user_decks) => {
       setDeckId(0)
       if ($draft.draft_id && (!$user_decks.decks.length || $draft.draft_id !== $user_decks.decks[0].id))
@@ -405,6 +406,7 @@
               id: $draft.draft_id || v4(),
               name,
               cards: cards,
+              side: side,
               date: Date.now(),
               tags: [$draft.variant === 'draft' ? 'Драфт' : 'Силед']
             },
@@ -538,8 +540,11 @@
 </script>
 
 {#if $draft.step <= 3}
-  <a href="https://crowdrepublic.ru/projects/1072863?utm_source=nxt&utm_medium=banner&utm_campaign=bk2025" target="_blank" id="ellion">&nbsp;</a>
-  <a href="https://crowdrepublic.ru/projects/1072863?utm_source=nxt&utm_medium=banner&utm_campaign=bk2025" target="_blank" id="ellion-text">&nbsp;</a>
+  <a href="https://t.me/freemen_cup" target="_blank" id="ellion">&nbsp;</a>
+  <a href="https://t.me/freemen_cup" target="_blank" id="ellion2">&nbsp;</a>
+  <a href="https://t.me/freemen_cup" target="_blank" id="ellion-text1">&nbsp;</a>
+  <a href="https://t.me/freemen_cup" target="_blank" id="ellion-text">&nbsp;</a>
+  <a href="https://t.me/freemen_cup" target="_blank" id="ellion-text2">&nbsp;</a>
   <section
     class="content draft_form"
     use:shortcuts={{ keyboard: true }}
@@ -824,7 +829,7 @@
             class="outline"
             disabled={visible_deck.length === 0}
             on:click={(_e) => {
-              saveDeck(getDeckName(), visible_deck, true)
+              saveDeck(getDeckName(), visible_deck, visible_own ? $draft.side: [], true)
             }}>Раздать колоду</button
           >
         </p>
@@ -836,7 +841,7 @@
             style="width: 100%;"
             disabled={visible_deck.length === 0}
             on:click={(_e) => {
-              saveDeck(getDeckName(), visible_deck, false)
+              saveDeck(getDeckName(), visible_deck, visible_own ? $draft.side: [], false)
             }}>Сохранить</button
           >
           <button
@@ -895,7 +900,7 @@
             style="padding: 5px; height: 45px;  margin-left: 10px;"
             disabled={visible_deck.length === 0}
             on:click={(e) => {
-              takeScreenshot('#own-cards', getDeckName(), groupCards(visible_deck, 'asis'), "", e.shiftKey, $other_options['screenshot_size'])
+              takeScreenshot('#own-cards', getDeckName(), groupCards(visible_deck, 'asis'), [], "", e.shiftKey, $other_options['screenshot_size'])
             }}
           >
             <svg width="32" height="32" viewBox="0 0 192 192" fill="none"

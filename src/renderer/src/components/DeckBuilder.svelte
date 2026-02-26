@@ -12,7 +12,7 @@
 
   import { option_set, user_decks, filteredSortedCards } from '../stores/user_data.js';
   import { deckbuilder_driver } from '../stores/help.js';
-  import { byId, groupCards, ungroupCards, statistics, collectColors, countOfType } from '../stores/cards.js';
+  import { byId, groupCards, totalCardCount, ungroupCards, statistics, collectColors, countOfType } from '../stores/cards.js';
 
   import Card from './includes/Card.svelte'
   import Filter from './includes/Filter.svelte'
@@ -64,6 +64,8 @@
       const [action, deck_id, position, item] = undo.pop()
       if(action === 'add') $user_decks['decks'][deck_id].cards.pop()
       if(action === 'rem') $user_decks['decks'][deck_id].cards.splice(position, 0, item)
+      if(action === 'add-side') $user_decks['decks'][deck_id].side.pop()
+      if(action === 'rem-side') $user_decks['decks'][deck_id].side.splice(position, 0, item)
       if(action === 'mov') $user_decks['decks'][deck_id].cards = item;
       return {...$user_decks, decks: $user_decks['decks']};
     });
@@ -73,6 +75,15 @@
     options.update($options => {
       const nextIndex = (($options.order || 0) + 1) % orders.length;
       return {...$options, order: nextIndex};
+    });
+  }
+
+  function cleanupDeck(deck_id) {
+    user_decks.update(($user_decks) => {
+      $user_decks['decks'][deck_id].cards = $user_decks['decks'][deck_id].cards.filter((card_id) => {
+        if(byId(card_id)) return card_id
+      })
+      return $user_decks
     });
   }
 
@@ -93,6 +104,27 @@
     user_decks.update(($user_decks) => {
       $user_decks['decks'][deck_id].cards.push(card_id);
       undo.push(["add", deck_id, -1, card_id])
+      return {...$user_decks, decks: $user_decks['decks']};
+    });
+  }
+
+  function removeOneSide(deck_id, card_id) {
+    if(deck_id === null) return;
+    user_decks.update(($user_decks) => {
+      const rem = $user_decks['decks'][deck_id].side.lastIndexOf(card_id);
+      if (rem !== -1) {
+        $user_decks['decks'][deck_id].side.splice(rem, 1)
+        undo.push(["rem-side", deck_id, rem, card_id])
+      }
+      return $user_decks;
+    });
+  }
+
+  function addOneSide(deck_id, card_id) {
+    if(deck_id === null) return;
+    user_decks.update(($user_decks) => {
+      $user_decks['decks'][deck_id].side.push(card_id);
+      undo.push(["add-side", deck_id, -1, card_id])
       return {...$user_decks, decks: $user_decks['decks']};
     });
   }
@@ -184,8 +216,19 @@
   let grouppedCards
   $: grouppedCards = groupCards($user_decks['decks'][deck_id]?.cards || [], order)
 
+  let grouppedSide
+  $: grouppedSide = groupCards($user_decks['decks'][deck_id]?.side || [], order)
+
+  let cardsCount
+  $: cardsCount = totalCardCount([$user_decks['decks'][deck_id]?.cards || [], $user_decks['decks'][deck_id]?.side || []])
+
   let userDeck
   $: userDeck = $user_decks['decks'][deck_id] ? $user_decks['decks'][deck_id].cards : []
+
+  let userSide
+  $: userSide = $user_decks['decks'][deck_id]?.side || []
+
+  let show_side = false
 </script>
 
 {#if true}
@@ -256,15 +299,22 @@
        <svg xmlns="http://www.w3.org/2000/svg" width="24" height="24" viewBox="0 0 24 24" style="fill: #e8dff2;"><path d="M6.227 11h11.547c.862 0 1.32-1.02.747-1.665L12.748 2.84a.998.998 0 0 0-1.494 0L5.479 9.335C4.906 9.98 5.364 11 6.227 11zm5.026 10.159a.998.998 0 0 0 1.494 0l5.773-6.495c.574-.644.116-1.664-.747-1.664H6.227c-.862 0-1.32 1.02-.747 1.665l5.773 6.494z"></path></svg>
      </button>
     </div>
-    <div class="decklist" class:tighter={grouppedCards.length > 21} class:tightest={grouppedCards.length > 25}
+    <div class="decklist" class:tighter={grouppedCards.length + grouppedSide.length > 21} class:tightest={grouppedCards.length + grouppedSide.length > 25}
         use:shortcuts={{keyboard: true}} on:action:number={setCount} on:action:close={() => { if(!$popupStore.isOpen && document.activeElement !== document.getElementById('search')){ navigate('/app/decks') } } } on:action:undo={doUndo}>
-      {#each grouppedCards as [card, count]}
+      <div style="">
+        {#if grouppedCards.length == 0 && !show_side}
+          <div class="side-light-orb"></div>
+        {/if}
+        {#each grouppedCards as [card, count]}
         {#if card}
          <div data-cardid={card.id} class={`card_line bg-${card.color} rarity-${card.rarity}`} use:shortcuts={{keyboard: true}}
               on:action:minus={() => addOne(deck_id, card.altto || card.id)} on:action:primary={() => removeOne(deck_id, card.altto || card.id)}
-              on:action:preview={() => togglePopup(card, grouppedCards.map(group => group[0].id))}>
+              on:action:preview={() => togglePopup(card, grouppedCards.map(group => group[0].id))}
+              on:action:altplus={() => { removeOne(deck_id, card.altto || card.id); addOneSide(deck_id, card.altto || card.id) }}
+              on:action:altminus={() => { addOne(deck_id, card.altto || card.id); removeOneSide(deck_id, card.altto || card.id) }}
+         >
             <span class="count">
-              {#if count > 1}x<b style={(!card.horde && count > 3) || (card.horde && count > 6) ? "color: #D93526" : "color: #E0E3E7"}>{count}</b>{/if}
+              {#if count > 1}x<b style={(!card.horde && cardsCount[card.id] > 3) || (card.horde && cardsCount[card.id] > 6) ? "color: #D93526" : "color: #E0E3E7"}>{count}</b>{/if}
             </span>
             <span class="card_name" style={card?.ban ? "text-decoration: line-through" : ""}>{card?.name}</span>
             <span class="cost" class:elite={card?.elite} class:uniq={card?.uniq}>
@@ -273,7 +323,7 @@
          </div>
          {:else}
          <div data-cardid={count} class={`card_line bg-0 rarity-0`} use:shortcuts={{keyboard: true}}
-              on:action:primary={() => removeOne(deck_id, null)}>
+              on:action:primary={() => cleanupDeck(deck_id)}>
             <span class="count">
               x<b style="color: #D93526">?</b>
             </span>
@@ -282,6 +332,44 @@
          </div>
          {/if}
       {/each}
+      </div>
+      <p style="margin: 10px 0 10px 35px; font-size: 85%; position: relative; z-index: 1;"><button class="a" use:shortcuts on:action:primary={()=> { show_side = !show_side }}>Cайд колоды</button></p>
+      {#if show_side}
+        <div class="side-help"></div>
+        {#if grouppedSide.length == 0}
+          <div class="side-light-orb"></div>
+        {/if}
+
+        <div style="">
+        {#each grouppedSide as [card, count]}
+          {#if card}
+           <div data-cardid={card.id} class={`card_line bg-${card.color} rarity-${card.rarity}`} use:shortcuts={{keyboard: true}}
+                on:action:minus={() => addOneSide(deck_id, card.altto || card.id)} on:action:primary={() => removeOneSide(deck_id, card.altto || card.id)}
+                on:action:preview={() => togglePopup(card, grouppedCards.map(group => group[0].id))}
+                on:action:altplus={() => { addOne(deck_id, card.altto || card.id); removeOneSide(deck_id, card.altto || card.id) }}
+                on:action:altminus={() => { removeOne(deck_id, card.altto || card.id); addOneSide(deck_id, card.altto || card.id) }}
+           >
+              <span class="count">
+                {#if count > 1}x<b style={(!card.horde && cardsCount[card.id] > 3) || (card.horde && cardsCount[card.id] > 6) ? "color: #D93526" : "color: #E0E3E7"}>{count}</b>{/if}
+              </span>
+              <span class="card_name" style={card?.ban ? "text-decoration: line-through" : ""}>{card?.name}</span>
+              <span class="cost" class:elite={card?.elite} class:uniq={card?.uniq}>
+                {card?.cost}
+              </span>
+           </div>
+           {:else}
+           <div data-cardid={count} class={`card_line bg-0 rarity-0`} use:shortcuts={{keyboard: true}}
+                on:action:primary={() => removeOne(deck_id, null)}>
+              <span class="count">
+                x<b style="color: #D93526">?</b>
+              </span>
+              <span class="card_name">[ОТСУТСТВУЕТ]</span>
+              <span class="cost">—</span>
+           </div>
+           {/if}
+        {/each}
+        </div>
+      {/if}
     </div>
     <div class="deck_stats">
       <span class="colors">{#each collectColors(userDeck) as color}<span class={`color color-${color}`}></span>{/each}</span>
@@ -289,7 +377,7 @@
         <span class="elite-gold">{countOfType(userDeck, 'elite', true)}</span>
         <span class="elite-silver">{countOfType(userDeck, 'elite', false)}</span>
       </span>
-      <h4><span style={userDeck.length != 30 ? "color: #D93526" : ""}>{userDeck.length}</span> / 30</h4>
+      <h4><span style={userDeck.length != 30 ? "color: #D93526" : ""}>{userDeck.length}</span> / 30{#if userSide.length > 0}<span style={userSide.length > 10 ? "color: #D93526; font-size: 70%; margin-left: 3px" : "font-size: 70%; margin-left: 3px"}>+{userSide.length}</span>{/if}</h4>
     </div>
     <button class="outline low-profile-hidden driver-deckbuilder-deal" style="width: 100%; margin-top: 10px;" use:shortcuts on:action:primary={() => { navigate('/app/deal/'); }}>Раздать колоду</button>
     <div style="display: flex; justify-content: space-between; width: 100%; margin-top: 10px;">
@@ -297,10 +385,10 @@
       <button class="outline" style="padding: 5px; height: 45px;  margin-left: 10px;" on:click={() => { togglePopup($user_decks['decks'][deck_id], null, 'deck') }}>
         <svg width="32" height="32" viewBox="0 0 24 24" fill="none"><path fill-rule="evenodd" clip-rule="evenodd" d="M11.2383 2.79888C10.6243 2.88003 9.86602 3.0542 8.7874 3.30311L7.55922 3.58654C6.6482 3.79677 6.02082 3.94252 5.54162 4.10698C5.07899 4.26576 4.81727 4.42228 4.61978 4.61978C4.42228 4.81727 4.26576 5.07899 4.10698 5.54162C3.94252 6.02082 3.79677 6.6482 3.58654 7.55922L3.30311 8.7874C3.0542 9.86602 2.88003 10.6243 2.79888 11.2383C2.71982 11.8365 2.73805 12.2413 2.84358 12.6092C2.94911 12.9772 3.14817 13.3301 3.53226 13.7954C3.92651 14.2731 4.47607 14.8238 5.25882 15.6066L7.08845 17.4362C8.44794 18.7957 9.41533 19.7608 10.247 20.3954C11.0614 21.0167 11.6569 21.25 12.2623 21.25C12.8678 21.25 13.4633 21.0167 14.2776 20.3954C15.1093 19.7608 16.0767 18.7957 17.4362 17.4362C18.7957 16.0767 19.7608 15.1093 20.3954 14.2776C21.0167 13.4633 21.25 12.8678 21.25 12.2623C21.25 11.6569 21.0167 11.0614 20.3954 10.247C19.7608 9.41533 18.7957 8.44794 17.4362 7.08845L15.6066 5.25882C14.8238 4.47607 14.2731 3.92651 13.7954 3.53226C13.3301 3.14817 12.9772 2.94911 12.6092 2.84358C12.2413 2.73805 11.8365 2.71982 11.2383 2.79888ZM11.0418 1.31181C11.7591 1.21701 12.3881 1.21969 13.0227 1.4017C13.6574 1.58372 14.1922 1.91482 14.7502 2.37538C15.2897 2.82061 15.8905 3.4214 16.641 4.17197L18.5368 6.06774C19.8474 7.37835 20.8851 8.41598 21.5879 9.33714C22.311 10.2849 22.75 11.197 22.75 12.2623C22.75 13.3276 22.311 14.2397 21.5879 15.1875C20.8851 16.1087 19.8474 17.1463 18.5368 18.4569L18.4569 18.5368C17.1463 19.8474 16.1087 20.8851 15.1875 21.5879C14.2397 22.311 13.3276 22.75 12.2623 22.75C11.197 22.75 10.2849 22.311 9.33714 21.5879C8.41598 20.8851 7.37833 19.8474 6.06771 18.5368L4.17196 16.641C3.4214 15.8905 2.82061 15.2897 2.37538 14.7502C1.91482 14.1922 1.58372 13.6574 1.4017 13.0227C1.21969 12.3881 1.21701 11.7591 1.31181 11.0418C1.40345 10.3484 1.59451 9.52048 1.83319 8.48622L2.13385 7.18334C2.33302 6.32023 2.49543 5.61639 2.68821 5.05469C2.88955 4.46806 3.14313 3.9751 3.55912 3.55912C3.9751 3.14313 4.46806 2.88955 5.05469 2.68821C5.61639 2.49543 6.32023 2.33302 7.18335 2.13385L8.48622 1.83319C9.52047 1.59451 10.3484 1.40345 11.0418 1.31181ZM9.49094 7.99514C9.00278 7.50699 8.21133 7.50699 7.72317 7.99514C7.23502 8.4833 7.23502 9.27476 7.72317 9.76291C8.21133 10.2511 9.00278 10.2511 9.49094 9.76291C9.97909 9.27476 9.97909 8.4833 9.49094 7.99514ZM6.66251 6.93448C7.73645 5.86054 9.47766 5.86054 10.5516 6.93448C11.6255 8.00843 11.6255 9.74963 10.5516 10.8236C9.47766 11.8975 7.73645 11.8975 6.66251 10.8236C5.58857 9.74963 5.58857 8.00843 6.66251 6.93448ZM19.0511 10.9902C19.344 11.2831 19.344 11.7579 19.0511 12.0508L12.0721 19.0301C11.7792 19.323 11.3043 19.323 11.0114 19.0301C10.7185 18.7372 10.7185 18.2623 11.0114 17.9694L17.9904 10.9902C18.2833 10.6973 18.7582 10.6973 19.0511 10.9902Z" fill="#ffffff"/></svg>
       </button>
-      <button class="outline" style="padding: 5px; height: 45px;  margin-left: 10px;" on:click={() => { window.electron.ipcRenderer.send('save-deck', byId($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'tts'); }}>
+      <button class="outline" style="padding: 5px; height: 45px;  margin-left: 10px;" on:click={() => { window.electron.ipcRenderer.send('save-deck', byId($user_decks['decks'][deck_id].cards), $user_decks['decks'][deck_id].name, 'tts', 'Констрактед', null, null, byId($user_decks['decks'][deck_id].side)); }}>
         <svg width="32" height="32" viewBox="0 0 50.8 50.8" style="fill: none;" xml:space="preserve"><path d="M5.821 24.871h39.158v20.108H5.821z" style="fill:none;stroke:#ffffff;stroke-width:3.175;stroke-linecap:round;stroke-linejoin:round;stroke-dasharray:none;stroke-opacity:1"/><path d="M14.949 5.82h20.902M8.864 18.52h33.072m-30.03-6.35h26.988" style="fill:#000000;stroke:#ffffff;stroke-width:3.175;stroke-linecap:round;stroke-dasharray:none;stroke-opacity:1"/></svg>
       </button>
-      <button class="outline" style="padding: 5px; height: 45px;  margin-left: 10px;" on:click={(e) => { takeScreenshot('#deck-view', deckName, groupCards($user_decks['decks'][deck_id].cards, show_full ? 'asis' : order), "", e.shiftKey, $other_options['screenshot_size']) }}>
+      <button class="outline" style="padding: 5px; height: 45px;  margin-left: 10px;" on:click={(e) => { takeScreenshot('#deck-view', deckName, groupCards($user_decks['decks'][deck_id].cards, show_full ? 'asis' : order), groupCards($user_decks['decks'][deck_id].side, show_full ? 'asis' : order), "", e.shiftKey, $other_options['screenshot_size']) }}>
         <svg width="32" height="32" viewBox="0 0 192 192" fill="none"><path fill="#ffffff" d="M60 50v6a6 6 0 0 0 4.8-2.4L60 50Zm12-16v-6a6 6 0 0 0-4.8 2.4L72 34Zm60 16-4.8 3.6A6 6 0 0 0 132 56v-6Zm-12-16 4.8-3.6A6 6 0 0 0 120 28v6Zm44 32v76h12V66h-12Zm-10 86H38v12h116v-12ZM28 142V66H16v76h12Zm10-86h22V44H38v12Zm26.8-2.4 12-16-9.6-7.2-12 16 9.6 7.2ZM132 56h22V44h-22v12Zm4.8-9.6-12-16-9.6 7.2 12 16 9.6-7.2ZM120 28H72v12h48V28ZM38 152c-5.523 0-10-4.477-10-10H16c0 12.15 9.85 22 22 22v-12Zm126-10c0 5.523-4.477 10-10 10v12c12.15 0 22-9.85 22-22h-12Zm12-76c0-12.15-9.85-22-22-22v12c5.523 0 10 4.477 10 10h12ZM28 66c0-5.523 4.477-10 10-10V44c-12.15 0-22 9.85-22 22h12Z"/><circle cx="96" cy="102" r="28" stroke="#ffffff" stroke-width="12"/></svg>
       </button>
     </div>
@@ -315,9 +403,11 @@
       {#if card}
       <Card card={card}
         onpreview={togglePopup}
-        onprimary={(card) => addOne(deck_id, card.altto || card.id)}
-        onplus={(card) => addOne(deck_id, card.altto || card.id)}
-        onminus={(card) => removeOne(deck_id, card.altto || card.id)}
+        onprimary={(card) => show_side ? addOneSide(deck_id, card.altto || card.id) : addOne(deck_id, card.altto || card.id)}
+        onplus={(card) => show_side ? addOneSide(deck_id, card.altto || card.id) : addOne(deck_id, card.altto || card.id)}
+        onminus={(card) => show_side ? removeOneSide(deck_id, card.altto || card.id) : removeOne(deck_id, card.altto || card.id)}
+        onaltplus={(card) => show_side ? addOne(deck_id, card.altto || card.id) : addOneSide(deck_id, card.altto || card.id)}
+        onaltminus={(card) => show_side ? removeOne(deck_id, card.altto || card.id) : removeOneSide(deck_id, card.altto || card.id)}
         showCount={$options.showCount}
         showAlts={!$options.onlyBase}
         dimAbsent={$options.dimAbsent}
@@ -355,14 +445,33 @@
            </div>
           {/if}
         {/each}
+        {#if grouppedSide.length > 0}
+          <div class="side" style="grid-column: 1/-1; max-height: 40px"><hr></div>
+          {#each grouppedSide as [card, count]}
+          <div class="side sortable">
+            {#if card}
+              <Card card={card}
+                copies={count}
+                countCopies={true}
+                showCount={false}
+                showAlts={false}
+                dimAbsent={$options.dimAbsent}
+                showBan={false}
+                showPrice={false}
+              />
+            {/if}
+          </div>
+          {/each}
+          <div class="side" style="grid-column: 1/-1; max-height: 40px"><hr></div>
+        {/if}
       </section>
       <hr />
       <div class="deck_stats">
         <span class="colors">{#each collectColors(userDeck) as color}<span class={`color color-${color}`}></span>{/each}</span>
         <h4 style="text-align: center">
-          <span style="font-size: 70%">LIF:</span> {byId(userDeck).filter((x) => x).reduce((acc, card) => { return acc + card.life || 0}, 0)}
+          <span style="font-size: 70%">HP:</span> {byId(userDeck).filter((x) => x).reduce((acc, card) => { return acc + card.life || 0}, 0)}
           &nbsp; &nbsp;
-          <span style="font-size: 70%">ATK:</span> {byId(userDeck).filter((x) => x).reduce((acc, card) => { return (card.hit || [0,0,0]).map((num, index) => num + acc[index])}, [0,0,0]).join('-')}
+          <span style="font-size: 70%">АТК:</span> {byId(userDeck).filter((x) => x).reduce((acc, card) => { return (card.hit || [0,0,0]).map((num, index) => num + acc[index])}, [0,0,0]).join('-')}
         </h4>
         <h4 style="text-align: right;"><span>{byId(userDeck).filter((x) => x).reduce((acc, card) => { return acc + get_karapet_score(card.set_id, card.number) / 10 * card.cost}, 0).toFixed(1)}</span></h4>
       </div>

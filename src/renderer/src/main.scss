@@ -186,6 +186,24 @@ main > aside.right .decklist {
   background-color: #2A3140;
 }
 
+main > aside.right .side-help {
+  display: inline-block;
+  position: absolute;
+  margin-top: -34px;
+  width: 100%;
+  height: 40px;
+  right: 10px;
+  background: url(./img/side-help.webp) no-repeat right;
+  background-size: contain;
+  opacity: 0.6;
+  z-index: 0;
+}
+
+main > aside.right .side-help-strip {
+  margin-top: 30px;
+  display: block;
+}
+
 main > aside.right .hint,
 main > aside.right .hint:focus,
 main > aside.right .hint:active{
@@ -289,6 +307,10 @@ main > aside.right .decklist .card_line .card_name {
 
   border-radius: 15px 0 0 15px;
   transition: margin 0.3s ease-in-out, padding 0.3s ease-in-out, height 0.3s ease-in-out;
+
+  text-overflow: ellipsis;
+  overflow: hidden;
+  white-space: nowrap;
 }
 
 main > aside.right .decklist.tighter .card_line .card_name {
@@ -348,6 +370,29 @@ main > aside.right .decklist .bg-32 .card_name{
   text-shadow: 1px 0 0 #333C4E;
 }
 
+main > aside.right .decklist .side-light-orb {
+  margin: 15px 20px 0;
+
+  height: 2px;
+  background-color: #fff;
+  border-radius: 50%;
+  box-shadow:
+      0 0 1px 1px rgba(110, 67, 185, 0.7),
+      0 0 2px 2px rgba(110, 67, 185, 0.5),
+      0 0 5px 5px rgba(110, 67, 185, 0.3);
+  transition: box-shadow 0.3s ease-in-out;
+  animation: pulsate 1s infinite alternate ease-in-out;
+}
+
+@keyframes pulsate {
+    0% {
+        transform: scale(0.98);
+    }
+    100% {
+        transform: scale(1.02);
+    }
+}
+
 main .deck_stats {
   margin: -.2em 0 -1em;
   text-align: right;
@@ -362,7 +407,7 @@ main .deck_stats span {
 }
 
 main .deck_stats span.colors {
-  width: 140px;
+  width: 110px;
 }
 
 main .deck_stats .filler {
@@ -417,6 +462,7 @@ main .content .deck_stats .elite span {
 main .deck_stats h4 {
   width: 120px;
   flex-grow: 1;
+  font-size: 130%;
 }
 
 .card-grid .card__rotator .deck-colors {
@@ -461,7 +507,7 @@ main .content .deck_stats .color {
 
 .card-grid .card__rotator .deck-colors .color + .color,
 main .deck_stats .color + .color{
-  margin-left: -10px;
+  margin-left: -12px;
 }
 
 main > aside.right .actions {
@@ -942,8 +988,8 @@ section.card-grid h3{
   width: calc(100% + 2px);
   height: calc(100% + 2px);
   backface-visibility: hidden;
-  background: url(/cards/back.jpg) no-repeat center / cover,
-    url(cards/back.jpg) no-repeat center / cover;
+  background: url(/cards/back.webp) no-repeat center / cover,
+    url(cards/back.webp) no-repeat center / cover;
   transform: rotateY(180deg);
   top: -1px;
   left: -1px;
@@ -965,6 +1011,14 @@ section.card-grid h3{
     0 6px 0px 0px black,
     0 7px 0px 0px #48536B,
     0 8px 0px 0px black;
+}
+
+.card-grid .side {
+  display: none;
+}
+
+.card-grid.print .side {
+  display: block;
 }
 
 .card-grid .card__rotator:hover {
@@ -1360,8 +1414,10 @@ section.card-grid h3{
 
   dialog.main-popup .card__rotator img {
     height: auto;
-    -webkit-transform: translate3d(0px, 0px, 0.01px);
-    transform: translate3d(0px, 0px, 0.01px);
+    image-rendering: -webkit-optimize-contrast;
+    //-webkit-transform: translate3d(0px, 0px, 0.01px);
+    //transform: translate3d(0px, 0px, 0.01px);
+    will-change: transform;
   }
 
   dialog.main-popup .card.featured .card__rotator {
@@ -1644,50 +1700,140 @@ section.card-grid h3{
 }
 
 #app.ellion {
-    background: url(./img/bk2025-bg.jpg) no-repeat center center;
+    background: url(./img/freecup-bg.webp) no-repeat center center;
     background-size: cover;
+    overflow-x: hidden;
 }
 
 #ellion {
     cursor: pointer;
-    top: 40px;
-    left: 0;
+    top: 30%;
+    left: -80px;
     position: absolute;
-    height: 90%;
+    height: 60%;
     min-height: 600px;
     width: 35%;
-    min-width: 350px;
-    background: url(./img/bk2025-l.png) no-repeat left top;
+    min-width: 300px;
+    max-width: 350px;
+    background: url(./img/freecup-l1.webp) no-repeat left center;
     background-size: contain;
     z-index: 0;
     text-decoration: none;
+    will-change: translate, rotate;
+    animation:
+        floating 5s ease-in-out infinite,
+        rotating2 7s ease-in-out infinite;
+}
+
+#ellion-text1 {
+  cursor: pointer;
+  top: 80px;
+  left: 0px;
+  position: absolute;
+  height: 60%;
+  min-height: 600px;
+  width: 35%;
+  min-width: 250px;
+  max-width: 300px;
+  margin: 0 20px;
+  z-index: 0;
+  text-decoration: none;
+  background: url(./img/freecup-text1.webp) no-repeat left top;
+  background-size: contain;
+}
+
+#ellion2 {
+    cursor: pointer;
+    top: 40px;
+    left: -80px;
+    position: absolute;
+    height: 60%;
+    min-height: 600px;
+    width: 35%;
+    min-width: 300px;
+    max-width: 350px;
+    background: url(./img/freecup-l2.webp) no-repeat left center;
+    background-size: contain;
+    z-index: 0;
+    text-decoration: none;
+    will-change: translate, rotate;
+    animation:
+        floating2 5s ease-in-out infinite,
+        rotating 7s ease-in-out infinite;
 }
 
 #ellion-text {
     cursor: pointer;
     top: 40px;
-    right: 0;
+    right: -20px;
     width: 35%;
     min-width: 350px;
+    max-width: 400px;
     position: absolute;
     height: 90%;
     min-height: 600px;
-    background: url(./img/bk2025-r.png) no-repeat right top;
+    background: url(./img/freecup-r.webp) no-repeat right center;
+    background-size: contain;
+    z-index: 0;
+    text-decoration: none;
+    will-change: translate, rotate;
+    animation:
+        floating 4s ease-in-out infinite,
+        rotating 5s ease-in-out infinite;
+}
+
+#ellion-text2 {
+    cursor: pointer;
+    bottom: 40px;
+    right: 20px;
+    width: 35%;
+    min-width: 250px;
+    max-width: 300px;
+    position: absolute;
+    height: 90%;
+    min-height: 600px;
+    background: url(./img/freecup-text2.webp) no-repeat right bottom;
     background-size: contain;
     z-index: 0;
     text-decoration: none;
 }
 
+@keyframes floating {
+    0%   { translate: 0 0px; }
+    25%  { translate: 0 9px; }
+    75%  { translate: 0 -9px; }
+    100% { translate: 0 0px; }
+}
+
+@keyframes floating2 {
+    0%   { translate: 0 0px; }
+    25%  { translate: 0 -9px; }
+    75%  { translate: 0 9px; }
+    100% { translate: 0 0px; }
+}
+
+@keyframes rotating {
+    0%   { rotate: 0deg; }
+    25%  { rotate: 2deg; }
+    75%  { rotate: -2deg; }
+    100% { rotate: 0deg; }
+}
+
+@keyframes rotating2 {
+    0%   { rotate: 0deg; }
+    25%  { rotate: -1deg; }
+    75%  { rotate: 1deg; }
+    100% { rotate: 0deg; }
+}
+
 @media (max-width: 800px) {
-  #app.ellion { background: none; }
-  #ellion-text { display: none; }
   #ellion {
+    margin-left: -40px;
     position: static;
     width: 100%;
     height: 20%;
     display: block;
     min-height: 154px;
-    background: url(./img/bk2025-sm.jpg) no-repeat center top;
     background-size: contain;
   }
 }
@@ -1856,5 +2002,13 @@ section.card-grid h3{
   .deck-charts-layout .col-side {
     grid-area: side;
     justify-self: center;
+  }
+}
+
+
+@media screen and (orientation: portrait) {
+  .draft_form {
+    max-width: none;
+    //margin: 0 2vw;
   }
 }

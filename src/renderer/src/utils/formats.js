@@ -60,6 +60,25 @@ export function writeCollection(collection, selectedOnly = false, selected = [])
   return settingsList.join("\n");
 }
 
+export function writeCollectionCSV(collection, options, byId) {
+  const {sets, rarities, alternatives} = options;
+  let settingsList = [`set_name;card_num;card_name;rarity;alt;count`];
+  Object.entries(collection).forEach(([idd, data]) => {
+    const counts = data.count[""] ? data.count[""] : 0;
+    if (counts === 0) return
+    let [_, ids, alt] = idd.match(/(^\d+)([^\d]\w*)?$/)
+    let id = parseInt(ids)
+    let set_name = sets[((id / 1000) |0).toString()]
+    let card = byId(id)
+    if(!card) return
+    let rarity = rarities[card.rarity.toString()]
+    let name = card.name
+    alt = alt ? (alternatives[alt] || "") : ""
+    settingsList.push(`"${set_name}";${id % 1000};"${name}";"${rarity}";"${alt}";${counts}`)
+  });
+  return settingsList.join("\n");
+}
+
 export function readDeck(card_data, input) {
   let deckName = "";
   const names = {};
@@ -67,10 +86,15 @@ export function readDeck(card_data, input) {
     if(card.alt == '')
       names[card.name.toLowerCase().replace('ё','е')] = card.id;
   });
-  return [deckName, input.split('\n').reduce((acc, line) => {
+  let deck = [], side = [], isSide = false
+  input.split('\n').forEach((line) => {
+    if(line == "---side---"){
+      isSide = true
+      return
+    }
     if(line[0] === "#") {
       deckName = line.slice(1).trim();
-      return acc;
+      return
     }
     line = line.trim().replace('<br>', '').toLowerCase().replace('ё','е');
     const parts = line.split(' ');
@@ -78,28 +102,63 @@ export function readDeck(card_data, input) {
     if (firstPart !== undefined) {
       const total = parseInt(firstPart, 10);
       const name = parts.join(' ');
-      const id = !isNaN(parseInt(name)) ? name : names[name];
-      if (!id) return acc;
-      for(let i = 0; i < total; i++) acc.push(id);
+      const id = !isNaN(parseInt(name)) ? name : names[name]
+      if (!id) return
+      for(let i = 0; i < total; i++) (isSide ? side : deck).push(id)
     }
-    return acc;
-  }, [])];
+  }, [])
+  return [deckName, deck, side];
 }
 
-export function writeDeck(deck, format = 'self') {
+export function writeDeck(deck, format = 'self', side=[]) {
   let ret = [];
   if (format === 'proberserk') {
     deck.forEach(([card, count]) => {
       ret.push(`${count} ${card.name.replace('ё', 'е').replace('Ё', 'Е')}`);
-    });
-    return ret.join("\n");
+    })
+    if(side.length > 0) ret.push("---side---")
+    side.forEach(([card, count]) => {
+      ret.push(`${count} ${card.name.replace('ё', 'е').replace('Ё', 'Е')}`)
+    })
   } else {
     deck.forEach(([card, count]) => {
       ret.push(`${count} ${card.id}`);
-    });
-    return ret.join("\n");
+    })
+    if(side.length > 0) ret.push("---side---")
+    side.forEach(([card, count]) => {
+      ret.push(`${count} ${card.id}`);
+    })
   }
+  return ret.join("\n");
 }
+
+const ttsSideScript = `
+  function onLoad()
+      self.addContextMenuItem("Убрать сайд", separateSideboard)
+  end
+
+  function separateSideboard(player_color)
+      local deckPos = self.getPosition()
+      local bounds = self.getBounds()
+      for i, o in ipairs(self.getObjects()) do
+          local isSide = false
+          if o.tags then
+              for _, tag in ipairs(o.tags) do
+                  if tag == "Side" then
+                      isSide = true
+                      break
+                  end
+              end
+          end
+          if isSide then
+              self.takeObject({
+                  guid = o.guid,
+                  position = {x = deckPos.x + bounds.size.x * 1.2, y = deckPos.y + bounds.size.y + 0.1 * i, z = deckPos.z},
+                  smooth = false
+              })
+          end
+      end
+  end`;
 
 export function readTTS(card_data, input) {
   const data = JSON.parse(input)
@@ -109,15 +168,19 @@ export function readTTS(card_data, input) {
       names[card.name.toLowerCase().replace('ё','е')] = card.id;
   })
 
-  const deck = data["ObjectStates"][0]["ContainedObjects"].map(({ Nickname })=> {
-    return names[Nickname.toLowerCase().replace('ё','е')];
-  }).filter((x) => x !== null && x !== undefined)
+  let deck = [], side = []
+  data["ObjectStates"][0]["ContainedObjects"].forEach(({ Nickname, Tags })=> {
+    let card_id = names[Nickname.toLowerCase().replace('ё','е')]
+    if(!card_id) return
+    if(Tags.includes("Side")) side.push(card_id)
+    else deck.push(card_id)
+  })
 
-  return ["", deck]
+  return ["", deck, side]
 }
 
-export async function writeTTS(deck, options, deck_type='Констрактед', full_deck=null, sign=null) {
-  const {path, suffix, sets, rarity, color, root_base, custom_view, deck_base, card_base, creature_types} = options;
+export async function writeTTS(deck, options, deck_type='Констрактед', full_deck=null, sign=null, side=[]) {
+  const {path, set_path, suffix, sets, rarity, color, root_base, custom_view, deck_base, card_base, creature_types} = options;
 
   function GUID() {
     return Math.floor(Math.random() * 0xFFFFFF).toString(16).padStart(6, '0');
@@ -149,9 +212,10 @@ export async function writeTTS(deck, options, deck_type='Констрактед'
   const deck_view = fastCopy(deck_base);
   deck_view["GUID"] = GUID()
   deck_view["Description"] = deck_type
+  deck_view["LuaScript"] = ""
   if (full_deck) {
     const valid = rot13(writeCompact(full_deck.map((card) => [1, card.set_id, card.number]), options).slice(1))
-    deck_view["LuaScript"] = '--' + valid.match(/.{1,32}/g).join('\n--')
+    deck_view["LuaScript"] += '--' + valid.match(/.{1,32}/g).join('\n--')
     if (sign) {
       const privKey = await crypto.subtle.importKey('pkcs8', hexToUint8Array('302e020100300506032b657004220420' + sign).buffer, { name: 'Ed25519' }, true, ['sign'])
       const signature = await crypto.subtle.sign({ name: 'Ed25519' }, privKey, new TextEncoder().encode(valid))
@@ -159,10 +223,15 @@ export async function writeTTS(deck, options, deck_type='Констрактед'
       deck_view["LuaScript"] += '\n--#sign\n--' + signature_hex.match(/.{1,32}/g).join('\n--')
     }
   }
-  deck_view["DeckIDs"] = deck.map((card) => { return getId(card) })
+  if (side.length > 0) {
+    deck_view["LuaScript"] += ttsSideScript
+  }
 
-  deck_view["CustomDeck"] = deck.reduce((acc, card) => {
-    const faceURL = getURL(card, path);
+  const deck_side = side.concat(deck)
+  deck_view["DeckIDs"] = deck_side.map((card) => { return getId(card) })
+
+  deck_view["CustomDeck"] = deck_side.reduce((acc, card) => {
+    const faceURL = getURL(card, set_path[card.set_id.toString()] || path);
     if (!acc[faceURL]) {
       const view = fastCopy(custom_view);
       view["FaceURL"] = faceURL;
@@ -173,25 +242,30 @@ export async function writeTTS(deck, options, deck_type='Констрактед'
     return acc;
     }, {});
 
-  deck_view["ContainedObjects"] = deck.map((card) => {
+  let i = 0
+  deck_view["ContainedObjects"] = deck_side.map((card) => {
     const card_view = fastCopy(card_base);
     const id = getId(card)
     card_view["GUID"] = GUID()
     card_view["CardID"] = getId(card)
     card_view["Nickname"] = card.name
     card_view["Tags"] = ['Card', rarity[`${card.rarity}`], color[`${card.color}`], sets[`${card.set_id}`], creature_types[`${card.type}`], `Cost_${card.cost}`, `Elite_${card.elite}`, `Uniq_${card.uniq}`]
+    if(i < side.length) card_view["Tags"].push("Side")
     const view = fastCopy(custom_view)
-    view["FaceURL"] = getURL(card, path)
+    view["FaceURL"] = getURL(card, set_path[card.set_id.toString()] || path)
     view["BackURL"] = path + 'back.jpg'
     card_view["CustomDeck"] = {[`${Math.floor(id / 100)}`]: view}
+    i++
     return card_view
   })
+
   ret["ObjectStates"] = [deck_view]
   return JSON.stringify(ret)
 }
 
 const BASE64_CHARS = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789-_";
 function encodeBase64Triplet([a, b, c]) {
+  if(a<=0 && b<=0 && c<=0) return "###"
   let combined = (a << 15) | (b << 8) | c;
   let result = '';
   for (let i = 0; i < 3; i++) {
@@ -202,6 +276,7 @@ function encodeBase64Triplet([a, b, c]) {
   return result;
 }
 function decodeBase64Triplet(encodedTriplet) {
+  if(encodedTriplet == "###") return [0,0,0]
   let combined = 0;
   for (let i = 0; i < 3; i++) {
     const charIndex = BASE64_CHARS.indexOf(encodedTriplet[i]);
@@ -223,12 +298,15 @@ export function readCompact(str, opts = null) {
   const options = opts || window.electron.ipcRenderer.sendSync('get-consts')
   const sets = Object.keys(options['sets'])
   if(str.startsWith('#')) {
-    return (str.slice(1).match(/.{1,3}/g) || []).map(chunk => decodeBase64Triplet(chunk)).reduce((acc, [count, s, number]) => {
-      for(let i = 0; i < count; i++) acc.push((parseInt(sets[s]) * 1000 + number).toString());
-      return acc;
-      }, []);
+    let deck = [], side = [], isSide = false
+    let triplets = (str.slice(1).match(/.{1,3}/g) || []).map(chunk => decodeBase64Triplet(chunk))
+    triplets.forEach(([count, s, number]) => {
+      if(count == 0) isSide = true
+      else for(let i = 0; i < count; i++) (isSide ? side : deck).push((parseInt(sets[s]) * 1000 + number).toString());
+    })
+    return [deck, side]
   }
-  return []
+  return [[], []]
 }
 
 export function rot13(str) {

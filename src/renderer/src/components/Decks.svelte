@@ -53,7 +53,7 @@
 
   function newDeck(new_deck){
     user_decks.update(($user_decks) => {
-      return {...$user_decks, decks: [new_deck || {"id": v4(), "name": "Новая колода", cards: [], date: Date.now(), tags: ["Констрактед"]}, ...$user_decks['decks']]};
+      return {...$user_decks, decks: [new_deck || {"id": v4(), "name": "Новая колода", cards: [], side: [], date: Date.now(), tags: ["Констрактед"]}, ...$user_decks['decks']]};
     });
 
     setDeckId(0)
@@ -198,6 +198,7 @@
               ondelete={(event) => { removeDeck(index, event.shiftKey) }}
               onforcedelete={() => { removeDeck(index, true) }}
               showCornerText={deck.cards.length.toString()}
+              showCornerTextSmall={deck.side && deck.side.length > 0 ? "+" + deck.side.length.toString() : null}
               showCornerColor={deck.cards.length !== 30 ? (deck.cards.length > 30 && deck.cards.length <= 50 ? '#FFBF00' : '#D93526') : null}
               showColors={collectColors(deck.cards)} />
         </div>

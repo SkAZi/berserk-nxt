@@ -2,9 +2,9 @@ from PIL import Image
 import os
 import re, math
 
-def create_tilesets(folder_path):
+def create_tilesets(folder_path, suffix=""):
     # Отфильтровываем список файлов, оставляя только подходящие имена
-    files = [f for f in os.listdir(folder_path) if re.match(r'^\d+\.jpg$', f)]
+    files = [f for f in os.listdir(folder_path) if re.match(r'^\d+\.webp$', f)]
     files.sort(key=lambda x: int(x.split('.')[0]))  # Сортируем по числовому значению имени
 
     rows, cols = 7, 10
@@ -22,12 +22,12 @@ def create_tilesets(folder_path):
 
         for idx in range(69):
             pos = page_num * 69 + idx + 1  # Позиция в общем списке (1-based index)
-            file_name = f'{pos}.jpg'
+            file_name = f'{pos}.webp'
             file_path = os.path.join(folder_path, file_name)
 
             if os.path.exists(file_path):
                 img = Image.open(file_path)
-                img = img.resize(list(x // 2 for x in img.size))
+                #img = img.resize(list(x // 2 for x in img.size))
             else:
                 # Создаем пустое изображение, если файла нет
                 img = Image.new('RGB', (tile_width, tile_height), (0, 0, 0))
@@ -40,8 +40,8 @@ def create_tilesets(folder_path):
 
         # Сохраняем результат
         folder_name = os.path.basename(folder_path)
-        result_image.save(f'{folder_name}-{page_num+1}.jpg', quality=95)
+        result_image.save(f'{folder_name}-{page_num+1}{suffix}.jpg', quality=95)
 
 # Путь к папке с картинками
-for folder_path in ['../src/renderer/cards/50']:
-    create_tilesets(folder_path)
+for folder_path in ['../src/renderer/cards/70']:
+    create_tilesets(folder_path, suffix="a3")

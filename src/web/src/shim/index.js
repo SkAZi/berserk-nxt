@@ -2,7 +2,7 @@ import { Store } from './store.js';
 import { v4 } from 'uuid'
 
 import { default_settings } from '../../../renderer/src/stores/defaults.js';
-import { newCollection, saveCollection, loadCollection, exportDeck, importDeck, exportDeckTTS, resetSelected, exportDraft, importDraft } from './files.js';
+import { newCollection, saveCollection, loadCollection, exportToCSV, exportDeck, importDeck, exportDeckTTS, resetSelected, exportDraft, importDraft } from './files.js';
 
 import cardConst from '../../../../resources/const.json';
 import _cardsStore from '../../../../resources/data.json';
@@ -152,6 +152,13 @@ const stores = {
         });
         store.set("decks.decks", decks);
       },
+      '6.6.0': (store) => {
+        const decks = store.get("decks.decks") || [];
+        decks.forEach((deck) => {
+          deck['side'] = []
+        })
+        store.set("decks.decks", decks)
+      },
     },
   }),
   'settings': new Store({
@@ -251,9 +258,9 @@ window.electron.ipcRenderer.on('set-data', (key, value) => {
 });
 
 
-window.electron.ipcRenderer.on('save-deck', (deck, name, type, deck_type, full_deck, sign_key) => {
-  if(type === 'tts') exportDeckTTS(deck, name, deck_type, full_deck, sign_key)
-  else exportDeck(deck, name, type)
+window.electron.ipcRenderer.on('save-deck', (deck, name, type, deck_type, full_deck, sign_key, side) => {
+  if(type === 'tts') exportDeckTTS(deck, name, deck_type, full_deck, sign_key, side)
+  else exportDeck(deck, name, type, side)
 });
 
 window.electron.ipcRenderer.on('load-deck', () => {
@@ -274,6 +281,10 @@ window.electron.ipcRenderer.on('reset-selected', () => {
 
 window.electron.ipcRenderer.on('export-selected', () => {
   saveCollection(true)
+})
+
+window.electron.ipcRenderer.on('export-to-csv', () => {
+  exportToCSV()
 })
 
 window.electron.ipcRenderer.on('load-collection', (result, reset, minus) => {
@@ -308,5 +319,5 @@ window.electron.ipcRenderer.on('get-isweb', () => {
 })
 
 window.electron.ipcRenderer.on('get-version', () => {
-  return '6.4.4'
+  return '7.1.0'
 })

@@ -12,8 +12,8 @@ from nltk.stem.snowball import SnowballStemmer
 
 from nltk.tokenize import word_tokenize
 
-DOALTS = True
-CURRENT_SET = 60
+DOALTS = False
+CURRENT_SET = 70
 
 stop_words = set(['x', 'и', 'в', 'во', 'что', 'он', 'я', 'с', 'со', 'как', 'а', 'то', 'все', 'она', 'так', 'его', 'но', 'да', 'ты', 'к', 'у', 'же', 'вы', 'за', 'бы', 'ее', 'мне', 'было', 'вот', 'от', 'меня', 'еще', 'нет', 'о', 'из', 'ему', 'теперь', 'даже', 'ну', 'вдруг', 'ли', 'если', 'уже', 'или', 'ни', 'быть', 'был', 'него', 'до', 'вас', 'нибудь', 'опять', 'уж', 'вам', 'ведь', 'там', 'потом', 'себя', 'ничего', 'ей', 'они', 'тут', 'где', 'есть', 'надо', 'ней', 'для', 'мы', 'тебя', 'их', 'чем', 'была', 'сам', 'чтоб', 'без', 'будто', 'чего', 'раз', 'тоже', 'себе', 'под', 'ж', 'тогда', 'кто', 'этот', 'того', 'потому', 'этого', 'какой', 'совсем', 'ним', 'здесь', 'этом', 'один', 'почти', 'мой', 'тем', 'чтобы', 'нее', 'сейчас', 'были', 'куда', 'зачем', 'всех', 'никогда', 'можно', 'наконец', 'два', 'об', 'другой', 'хоть', 'после', 'над', 'больше', 'тот', 'эти', 'нас', 'про', 'них', 'какая', 'много', 'разве', 'эту', 'моя', 'впрочем', 'хорошо', 'свою', 'этой', 'иногда', 'лучше', 'чуть', 'том', 'такой', 'им', 'более', 'конечно', 'всю'])
 
@@ -61,13 +61,15 @@ PROPS = {
     "nec": "Трупоедство",
     "icr": "Инкарнация",
     "reb": "Отпор",
+    "chrg": "Заряд",
+    "bld": "Кровожадность"
 }
 
 def process_tokens(row, icons):
     base_text = str(row['text']) if pd.notna(row['text']) else ""
     for icon in ICONS.keys():
         base_text = base_text.replace('{' + icon + '}', ' ' + ICONS[icon] + ' ')
-    text = re.sub(r'[^\w\d\s\+-]', '', base_text).replace(' - ', ' ').replace(' – ', ' ').replace(' – ', ' ').replace(' ', ' ')
+    text = re.sub(r'[^\w\d\s\+-]', '', base_text).replace('\n', ' ').replace(' - ', ' ').replace(' – ', ' ').replace(' – ', ' ').replace(' ', ' ')
     name = ' '.join(row['name'].split('-') + [row['name']]) if '-' in row['name'] else row['name']
     text = ' '.join([name, TYPE[int(row['type']) - 1], " ".join(str(row['class'] if pd.notna(row['class']) else "").split('.')), text])
     tags = []
@@ -97,13 +99,15 @@ with open('alts.json', 'r') as f:
 
 # Загрузка данных из CSV файла
 df = pd.read_csv(f'{CURRENT_SET}.csv', sep=',')
+#print(df)
+#exit()
 
 # Преобразование данных
 json_lines = []
 for index, row in df.iterrows():
     if not pd.notna(row['name']):
         continue
-    #print(row['name'])
+    #print(row)
     number = int(row['number'])
     icons = process_icons(row)
     fullid = f"{CURRENT_SET*1000 + int(row['number'])}"
@@ -134,8 +138,9 @@ for index, row in df.iterrows():
         "icons": icons,
         "art": row['artist'] if pd.notna(row['artist']) else "",
         "tokens": process_tokens(row, icons),
-        "text": row['text'] if pd.notna(row['text']) else "",
+        "text": row['text'].replace("\n", " ").replace("\r", "") if pd.notna(row['text']) else "",
         "prints": {},
+        "fmt": "webp",
         "alts": alts
     }
     print(', ' + json.dumps(card, ensure_ascii=False, separators=(',', ':')))

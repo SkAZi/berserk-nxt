@@ -4,7 +4,7 @@ import { v4 } from 'uuid'
 import { electronApp, optimizer, is } from '@electron-toolkit/utils'
 import icon from '../../resources/icon.png?asset'
 import { default_settings } from '../renderer/src/stores/defaults.js'
-import { readCollection, writeCollection, readDeck, writeTTS, readTTS, readCompact } from '../renderer/src/utils/formats.js'
+import { readCollection, writeCollection, writeCollectionCSV, readDeck, writeTTS, readTTS, readCompact } from '../renderer/src/utils/formats.js'
 import { installAddon, deinstallAddon } from './updater.js'
 import { DraftRecommender } from './predictors.js'
 import fs from 'fs-extra'
@@ -120,6 +120,13 @@ stores.decks = new SafeStore<any>({
         else deck['tags'].push('Констрактед')
         if ((deck['cards'] || []).length < 30) deck['tags'].push('В работе')
       });
+      store.set("decks.decks", decks)
+    },
+    '6.6.0': (store) => {
+      const decks = (store.get("decks.decks") as any[]) || [];
+      decks.forEach((deck: any) => {
+        deck['side'] = []
+      })
       store.set("decks.decks", decks)
     },
   },
@@ -289,9 +296,9 @@ app.whenReady().then(async () => {
     event.returnValue = null
   })
 
-  ipcMain.on('save-deck', (event, deck, name, type, deck_type, full_deck, sign_key) => {
-    if(type === 'tts') exportDeckTTS(deck, name, deck_type, full_deck, sign_key)
-    else exportDeck(deck, name, type)
+  ipcMain.on('save-deck', (event, deck, name, type, deck_type, full_deck, sign_key, side = []) => {
+    if(type === 'tts') exportDeckTTS(deck, name, deck_type, full_deck, sign_key, side)
+    else exportDeck(deck, name, type, side)
     event.returnValue = null
   })
 
@@ -331,6 +338,10 @@ app.whenReady().then(async () => {
 
   ipcMain.on('print-decklists', (_event, data) => {
     printDeckLists(data)
+  })
+
+  ipcMain.on('export-to-csv', (_event) => {
+    exportToCSV()
   })
 
   ipcMain.on('start-tour', (_event) => {
@@ -626,7 +637,7 @@ function runHelp(){
 }
 
 let default_save_path = app.getPath('downloads')
-function exportDeck(deck, name, format) {
+function exportDeck(deck, name, format, side) {
   dialog.showSaveDialog({
     title: 'Сохранить колоду',
     defaultPath: join(default_save_path, name + '.' + (format == "proberserk" ? 'txt' : 'brsd')),
@@ -643,9 +654,17 @@ function exportDeck(deck, name, format) {
         deck.forEach(([card, count]) => {
           ret.push(`${count} ${card.name.replace('ё','е').replace('Ё','Е')}`);
         });
+        if(side.length > 0) ret.push("---side---")
+        side.forEach(([card, count]) => {
+          ret.push(`${count} ${card.name.replace('ё','е').replace('Ё','Е')}`);
+        });
         content = ret.join("\n");
       } else {
         deck.forEach(([card, count]) => {
+          ret.push(`${count} ${card.id}`);
+        });
+        if(side.length > 0) ret.push("---side---")
+        side.forEach(([card, count]) => {
           ret.push(`${count} ${card.id}`);
         });
         content = ret.join("\n");
@@ -708,19 +727,19 @@ function importDeck() {
           if(code) break
         }
         if (code) {
-          const deck = readCompact(code.data, card_const);
+          const [deck, side] = readCompact(code.data, card_const);
           BrowserWindow.getAllWindows().forEach(win => {
-            win.webContents.send('new-deck', { id: v4(), name: deckFileName || "Новая колода", cards: deck, date: Date.now(), tags: ['Импорт'] });
+            win.webContents.send('new-deck', { id: v4(), name: deckFileName || "Новая колода", cards: deck, side: side, date: Date.now(), tags: ['Импорт'] });
           });
         } else {
           console.error('QR-код не найден.');
         }
       } else {
         const data_str = data.toString()
-        const [deckName, result] = filePath.endsWith('.json') ? readTTS(card_data, data_str) : readDeck(card_data, data_str);
+        const [deckName, result, side] = filePath.endsWith('.json') ? readTTS(card_data, data_str) : readDeck(card_data, data_str);
         if (result.length > 0) {
           BrowserWindow.getAllWindows().forEach(win => {
-            win.webContents.send('new-deck', { id: v4(), name: (deckName as any) || deckFileName, cards: result, date: Date.now(), tags: ['Импорт'] });
+            win.webContents.send('new-deck', { id: v4(), name: (deckName as any) || deckFileName, cards: result, side: side, date: Date.now(), tags: ['Импорт'] });
           });
         }
       }
@@ -730,7 +749,7 @@ function importDeck() {
   });
 }
 
-function exportDeckTTS(deck, name, deck_type = 'Констрактед', full_deck=null, sign_key=null) {
+function exportDeckTTS(deck, name, deck_type = 'Констрактед', full_deck=null, sign_key=null, side=[]) {
   const platform = os.platform();
   let pathsave = app.getPath('downloads')
   if (platform === 'darwin') {
@@ -753,7 +772,7 @@ function exportDeckTTS(deck, name, deck_type = 'Констрактед', full_de
     ]
   }).then(async (file) => {
     if (!file.canceled) {
-      const content = await writeTTS(deck, card_const['tts_options'], deck_type, full_deck, sign_key);
+      const content = await writeTTS(deck, card_const['tts_options'], deck_type, full_deck, sign_key, side);
       if(file.filePath) {
         fs.writeFileSync(file.filePath.toString(), content, 'utf-8');
         fs.copyFileSync(join(resources_path, 'back.png'), file.filePath.replace(/\.json$/, '.png'));
@@ -844,12 +863,17 @@ function manageArchives(archivesDir: string) {
 }
 
 function enableAddon(): void {
+  const set_path = {}
   addon_names.forEach(addon_name => {
     const data_addon = JSON.parse(fs.readFileSync(join(resources_path, addon_name), 'utf8'))
     if(data_addon['cards']) card_data = (card_data as any).concat(data_addon['cards'])
+    Object.keys(data_addon['const']['sets']).forEach((set_id) => {
+      set_path[set_id] = data_addon['const']['tts_options']['path']
+    })
+    delete data_addon['const']['tts_options']['path']
     if(data_addon['const']) deepMerge(card_const, data_addon['const'])
   })
-
+  card_const["tts_options"]["set_path"] = set_path
   BrowserWindow.getAllWindows().forEach((win) => {
     win.webContents.reload()
   })
@@ -974,4 +998,27 @@ function resetSettings() {
       app.quit()
     })
   }
+}
+
+function exportToCSV() {
+  const collection = stores.cards.get() as any
+  const card_ref = card_data.reduce((ret, card)=> {
+    ret[card.id] = card;
+    return ret;
+  }, {})
+  const result = writeCollectionCSV(collection, card_const, (id) => { return card_ref[id] })
+  dialog.showSaveDialog({
+    title: 'Сохранить коллекцию',
+    defaultPath: app.getPath('downloads'),
+    buttonLabel: 'Сохранить',
+    filters: [
+      { name: 'Файлы CSV', extensions: ['csv'] }
+    ]
+  }).then(file => {
+    if (!file.canceled && file.filePath) {
+      fs.writeFileSync(file.filePath.toString(), result, 'utf-8');
+    }
+  }).catch(err => {
+    console.log(err);
+  });
 }

@@ -1,4 +1,4 @@
-import { readCollection, writeCollection, readDeck, readTTS, readCompact, writeDeck, writeTTS } from '../../../renderer/src/utils/formats.js';
+import { readCollection, writeCollection, writeCollectionCSV, readDeck, readTTS, readCompact, writeDeck, writeTTS } from '../../../renderer/src/utils/formats.js';
 import { card_data } from './index.js';
 import { v4 } from 'uuid';
 import jpeg from 'jpeg-js';
@@ -58,8 +58,8 @@ export function loadCollection(collection, minus = false) {
 }
 
 
-export function exportDeck(deck, name, format) {
-  const content = writeDeck(deck, format)
+export function exportDeck(deck, name, format, side) {
+  const content = writeDeck(deck, format, side)
 
   const fileName = name + '.' + (format === "proberserk" ? 'txt' : 'brsd');
   const blob = new Blob(format !== "proberserk" ? [`#${name}\n` + content] : [content], {type: "text/plain;charset=utf-8"});
@@ -114,16 +114,16 @@ export function importDeck() {
 
         const code = jsQR(qrData, width, height);
         if (code) {
-          const result = readCompact(code.data);
-          window.electron.ipcRenderer.sendSync('new-deck', null, {id: v4(), name: fileName || "Новая колода", cards: result, date: Date.now(), tags: ['Импорт']});
+          const [result, side] = readCompact(code.data);
+          window.electron.ipcRenderer.sendSync('new-deck', null, {id: v4(), name: fileName || "Новая колода", cards: result, side: side, date: Date.now(), tags: ['Импорт']});
         } else {
           console.error('QR-код не найден.');
         }
       } else {
         const data = e.target.result;
         try {
-          const [deckName, result] = file.name.endsWith('.json') ? readTTS(card_data, data) : readDeck(card_data, data)
-          window.electron.ipcRenderer.sendSync('new-deck', null, {id: v4(), name: deckName || fileName || "Новая колода", cards: result, date: Date.now(), tags: ['Импорт']});
+          const [deckName, result, side] = file.name.endsWith('.json') ? readTTS(card_data, data) : readDeck(card_data, data)
+          window.electron.ipcRenderer.sendSync('new-deck', null, {id: v4(), name: deckName || fileName || "Новая колода", cards: result, side: side, date: Date.now(), tags: ['Импорт']});
         } catch (err) {
           console.error('Ошибка при чтении файла:', err);
         }
@@ -136,10 +136,10 @@ export function importDeck() {
   fileInput.click();
 }
 
-export async function exportDeckTTS(deck, name, deck_type, full_deck=null, sign_key=null) {
+export async function exportDeckTTS(deck, name, deck_type, full_deck=null, sign_key=null, side=[]) {
   const {tts_options} = window.electron.ipcRenderer.sendSync('get-consts');
   const fileName = name + '.json';
-  const blob = new Blob([await writeTTS(deck, tts_options, deck_type, full_deck, sign_key)], {type: "text/json;charset=utf-8"});
+  const blob = new Blob([await writeTTS(deck, tts_options, deck_type, full_deck, sign_key, side)], {type: "text/json;charset=utf-8"});
 
   const link = document.createElement('a');
   link.href = URL.createObjectURL(blob);
@@ -194,4 +194,24 @@ export function importDraft(callback) {
   };
 
   fileInput.click()
+}
+
+export function exportToCSV() {
+  const card_ref = window.electron.ipcRenderer.sendSync('get-cards').reduce((ret, card)=> {
+      ret[card.id] = card;
+      return ret;
+    }, {})
+  const cards = window.electron.ipcRenderer.sendSync('get-data', 'cards')
+  const opts = window.electron.ipcRenderer.sendSync('get-consts')
+  const content = writeCollectionCSV(cards, opts, (id) => { return card_ref[id] });
+
+  const blob = new Blob([content], {type: "text/plain;charset=utf-8"});
+  const link = document.createElement('a');
+
+  link.href = URL.createObjectURL(blob);
+  link.download = "my-collection.csv";
+  document.body.appendChild(link);
+  link.click();
+  document.body.removeChild(link);
+  URL.revokeObjectURL(link.href);
 }

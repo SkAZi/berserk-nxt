@@ -89,10 +89,10 @@
                   }
 
                   if(!code) return
-                  const deck = readCompact(code.data)
+                  const [deck, side] = readCompact(code.data)
                   if(deck.length > 0) {
                     user_decks.update(($user_decks) => {
-                      return {...$user_decks, decks: [{id: v4(), name: file.name.split(".")[0] || "Новая колода", cards: deck, date: Date.now(), tags: ['Импорт']}, ...$user_decks['decks']]};
+                      return {...$user_decks, decks: [{id: v4(), name: file.name.split(".")[0] || "Новая колода", cards: deck, side: side, date: Date.now(), tags: ['Импорт']}, ...$user_decks['decks']]};
                     });
                     setDeckId(0)
                     navigate('/app/deckbuilder')
@@ -159,14 +159,14 @@
 
   function readAndAddDeck(filename, result) {
     try {
-      let deckName, deck
-      if (filename === '') deck = readCompact(result)
-      else [deckName, deck] = filename.endsWith('.json') ?
+      let deckName, deck, side
+      if (filename === '') [deck, side] = readCompact(result)
+      else [deckName, deck, side] = filename.endsWith('.json') ?
         readTTS(cardsStore, result) : readDeck(cardsStore, result)
 
       if(deck.length > 0) {
         user_decks.update(($user_decks) => {
-          return {...$user_decks, decks: [{id: v4(), name: deckName || filename.split(".")[0] || "Новая колода", cards: deck, date: Date.now(), tags: ['Импорт']}, ...$user_decks['decks']]};
+          return {...$user_decks, decks: [{id: v4(), name: deckName || filename.split(".")[0] || "Новая колода", cards: deck, side: side, date: Date.now(), tags: ['Импорт']}, ...$user_decks['decks']]};
         });
         setDeckId(0)
         navigate('/app/deckbuilder')

@@ -146,7 +146,7 @@
         {#if card.ban}<img class="ban" class:small={type !== 'count'} src={banURL} alt="" />{/if}
         <span class="card__rotator">
           <img
-              src="{`${resoucesPath}/cards/${card.set_id}/${card.number}${art_suffix[card.alt] !== undefined ? art_suffix[card.alt] : card.alt}.jpg`}"
+              src="{`${resoucesPath}/cards/${card.set_id}/${card.number}${art_suffix[card.alt] !== undefined ? art_suffix[card.alt] : card.alt}.${card.fmt || "jpg"}`}"
               alt="&nbsp;"
               loading="lazy"
               width="992"
@@ -236,7 +236,7 @@
       <div class="card">
         <span class="card__rotator">
           <img
-              src="{`${resoucesPath}/cards/back.jpg`}"
+              src="{`${resoucesPath}/cards/back.webp`}"
               alt="&nbsp;"
               loading="lazy"
               width="992"

@@ -50,7 +50,7 @@ mac:
     - NSMicrophoneUsageDescription: Application requests access to the device's microphone.
     - NSDocumentsFolderUsageDescription: Application requests access to the user's Documents folder.
     - NSDownloadsFolderUsageDescription: Application requests access to the user's Downloads folder.
-  #identity: "Igor Potapov (2AC4L7R5YG)"
+  identity: null #"Igor Potapov (2AC4L7R5YG)"
   notarize: false #true
   artifactName: berserk-nxt-mac-${version}-${arch}.${ext}
   target: ['dmg'] #, 'zip']

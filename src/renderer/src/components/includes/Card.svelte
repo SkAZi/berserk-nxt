@@ -12,6 +12,8 @@
   export let onprimary = (_e, _card, _alt) => {}
   export let onplus = (_e, _card, _alt) => {}
   export let onminus = (_e, _card, _alt) => {}
+  export let onaltplus = (_e, _card, _alt) => {}
+  export let onaltminus = (_e, _card, _alt) => {}
 
   export let ondelete = null
   export let onforcedelete = null
@@ -28,6 +30,7 @@
   export let showText = null
   export let showTopText = null
   export let showCornerText = null
+  export let showCornerTextSmall = null
   export let showCornerColor = null
   export let proMode = false
   export let draggable = false
@@ -85,6 +88,12 @@
       on:action:minus={() => {
         onminus(card)
       }}
+      on:action:altplus={() => {
+        onaltplus(card)
+      }}
+      on:action:altminus={() => {
+        onaltminus(card)
+      }}
       on:action:select={isDeck
         ? () => {}
         : () => {
@@ -102,7 +111,7 @@
       {#each new Array(copies) as _copy, index}
       <div class:count_copies={countCopies ? (copies - index) > card.user_total_count : false}>
         <img
-          src={`${resoucesPath}/cards/${card.set_id}/${card.number}${art_suffix[card.alt] !== undefined ? art_suffix[card.alt] : card.alt}.jpg`}
+          src={`${resoucesPath}/cards/${card.set_id}/${card.number}${art_suffix[card.alt] !== undefined ? art_suffix[card.alt] : card.alt}.${card.fmt || "jpg"}`}
           alt={card.number}
           loading="lazy"
           width="992"
@@ -119,8 +128,8 @@
         </div>
       {/if}
       {#if showCornerText}
-        <p class="corner-text" style={showCornerColor ? `color: ${showCornerColor}` : ''}>
-          {showCornerText}
+        <p class="corner-text" style={showCornerColor ? `color: ${showCornerColor}; display: block` : 'display: block'}>
+          {showCornerText} {#if showCornerTextSmall}<span style="font-size: 80%; display: inline">{showCornerTextSmall}</span>{/if}
         </p>
       {/if}
     </div>

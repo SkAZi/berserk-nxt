@@ -1,6 +1,6 @@
 {
   "name": "bersency-next",
-  "version": "6.4.4",
+  "version": "7.1.0",
   "description": "ККИ Берсерк Nxt",
   "main": "./out/main/index.js",
   "author": "Игорь «SkAZi» Потапов",

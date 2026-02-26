@@ -115,6 +115,20 @@ export function groupCards(deck_cards, sortBy = 'cost') {
       .sort((a, b) => sortDiff(a[0], b[0], sortBy, orderMap));
 }
 
+export function totalCardCount(card_lists) {
+  const cardCountMap = {};
+  card_lists.forEach(list => {
+    list.forEach(card_id => {
+      if (!(card_id in cardCountMap)) {
+        cardCountMap[card_id] = 1
+      } else {
+        cardCountMap[card_id] += 1
+      }
+    })
+  })
+  return cardCountMap
+}
+
 export function ungroupCards(card_groups) {
   const flatList = card_groups.reduce((acc, [card, count]) => {
     const cardIds = Array(count).fill(card?.id);

@@ -12,7 +12,8 @@
       surname: "",
       name: "",
       city: "",
-      deck_ids: [null,null,null]
+      deck_ids: [null,null,null],
+      side: "1"
     }
 
     function generatePrintContent() {
@@ -31,7 +32,7 @@
       return `
       <html>
           <head>
-              <title>Распечатать список колод</title>
+              <title>Распечатать список колод ${data.title}</title>
               <style>
               html, h1 { margin: 0; padding: 0;}
               body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 80%; print-color-adjust:exact !important;
@@ -111,8 +112,107 @@
       `;
     }
 
+    function generatePrintContentSingleSide() {
+      const deckLists = data.deck_ids.map(deck_id => {
+        const deck = $user_decks['decks'][deck_id];
+        if (!deck) return '';
+        return groupCards(deck.cards).map(([card, count]) => `<tr><td>${count}</td><td>${card.name}</td></tr>`).join('');
+      });
+
+      const deckSides = data.deck_ids.map(deck_id => {
+        const deck = $user_decks['decks'][deck_id];
+        if (!deck) return '';
+        if(data.side === "3") return '<tr><td colspan="2">[Скрыто]</td></tr>';
+        return groupCards(deck.side || []).map(([card, count]) => `<tr><td>${count}</td><td>${card.name}</td></tr>`).join('');
+      });
+
+      const sizes = data.deck_ids.map(deck_id => {
+        const deck = $user_decks['decks'][deck_id];
+        if (!deck) return 0;
+        return deck.cards.length;
+      });
+
+      const sideSizes = data.deck_ids.map(deck_id => {
+        const deck = $user_decks['decks'][deck_id];
+        if (!deck) return 0;
+        if(data.side === "3") return '[Скрыто]';
+        return (deck.side || []).length;
+      });
+
+      return `
+      <html>
+          <head>
+              <title>Распечатать колоду ${data.title}</title>
+              <style>
+              html, h1 { margin: 0; padding: 0;}
+              body { margin: 0; padding: 0; font-family: Arial, sans-serif; font-size: 80%; print-color-adjust:exact !important;
+                -webkit-print-color-adjust:exact !important; }
+              table { font-size: 90%; width: 100%; border-collapse: collapse; margin-bottom: 20px; }
+              td, th { border: 1px solid #000; padding: 4px; text-align: left; white-space: no-wrap; }
+              th { background: #000; color: #fff; font-weight: normal; font-size: 90%; margin: 2px; }
+              h1 {margin-bottom: 0.4em;}
+              h5 { font-size: 130%; margin: 0; }
+              .header { text-align: center; margin-bottom: 20px; }
+              .deck-title { font-weight: bold; margin-top: 20px; }
+              .deck-section { width: 100% }
+               </style>
+          </head>
+          <body>
+              <div class="header">
+                  <h1>${data.title}</h1>
+                  <table>
+                      <tr>
+                          <td style="width: 10%">Фамилия:</td>
+                          <td style="width: 20%">${data.surname}</td>
+                          <td style="width: 10%">Город:</td>
+                          <td style="width: 20%">${data.city}</td>
+                          <td style="width: 20%; vertical-align: top;" rowspan="2">Подпись&nbsp;игрока:</td>
+                      </tr>
+                      <tr>
+                          <td>Имя:</td>
+                          <td>${data.name}</td>
+                          <td>Дата:</td>
+                          <td>${data.date}</td>
+                      </tr>
+                  </table>
+              </div>
+
+              <div style="display: flex; grid-gap: 1vw; align-items: flex-start;">
+                  <table style="width: 100%">
+                      <thead>
+                          <tr><th style="width: 15%">&nbsp;</th><th>Колода</th></tr>
+                          <tr><th>Кол-во</th><th>Название карты</th></tr>
+                      </thead>
+                      <tbody>${deckLists[0]}</tbody>
+                      <tfoot>
+                          <tr>
+                              <td colspan="2">Всего карт в колоде: ${sizes[0]}</td>
+                          </tr>
+                      </tfoot>
+                  </table>
+
+                  <table style="width: 100%">
+                      <thead>
+                          <tr><th style="width: 15%">&nbsp;</th><th>Сайд</th></tr>
+                          <tr><th>Кол-во</th><th>Название карты</th></tr>
+                      </thead>
+                      <tbody>${deckSides[0]}</tbody>
+                      <tfoot>
+                          <tr>
+                              <td colspan="2">Всего карт в сайде: ${sideSizes[0]}</td>
+                          </tr>
+                      </tfoot>
+                  </table>
+              </div>
+          </body>
+      </html>
+      `;
+    }
+
     function print() {
-      window.electron.ipcRenderer.send('print-decklists', generatePrintContent())
+      window.electron.ipcRenderer.send('print-decklists',
+        data.side === "1" ? generatePrintContent() :
+          generatePrintContentSingleSide())
     }
 </script>
 
@@ -151,10 +251,21 @@
                     <input type="text" bind:value={data.city} />
                 </label>
               </div>
+              <div style="display: flex; grid-gap: 1vw;">
+                <label style="width: 100%">
+                    Тип турнира:
+                    <select bind:value={data.side}>
+                      <option value="1">Три колоды</option>
+                      <option value="2">Одна колода с сайдом</option>
+                      <option value="3">Одна колода (сайд скрыт)</option>
+                    </select>
+                </label>
+              </div>
 
               <label>
               Выбери колоды:
               {#each data.deck_ids as _value, index (index)}
+                {#if data.side === "1" || index < 1}
                   <select
                   name={`deck-{index}`}
                   aria-label=""
@@ -166,6 +277,7 @@
                       <option value={deck_id}>{deck.name}</option>
                   {/each}
                   </select>
+                {/if}
               {/each}
               </label>
               <p>

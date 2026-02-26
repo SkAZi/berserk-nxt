@@ -2,7 +2,7 @@ import html2canvas from 'html2canvas';
 import QRCode from 'qrcode';
 import { writeCompact } from './formats.js'
 
-export function takeScreenshot(selector, name, data = null, suffix = "", clipboard = false, size = 1) {
+export function takeScreenshot(selector, name, data = null, side = [], suffix = "", clipboard = false, size = 1) {
   const node = document.querySelector(selector).cloneNode(true);
   const len = Array.from(node.childNodes).length
   node.style.background = '#2a3140';
@@ -15,7 +15,14 @@ export function takeScreenshot(selector, name, data = null, suffix = "", clipboa
   header.innerText = name
   node.prepend(header)
   let qrText = ""
-  if(data) qrText = writeCompact(data.map(([card, count]) => [count, card.set_id, card.number]))
+  if(data) {
+    let qrData = data.map(([card, count]) => [count, card.set_id, card.number])
+    if(side.length){
+      qrData.push([0,0,0])
+      side.forEach(([card, count]) => qrData.push([count, card.set_id, card.number]) )
+    }
+    qrText = writeCompact(qrData)
+  }
   QRCode.toCanvas(qrText, { version: 6, width: 108 * size, margin: 0, color: {dark: '#CFD5E2FF', light: '#00000000'} }, (err, qrCanvas) => {
     if(!err && qrText){
       qrCanvas.style.marginTop = '10px'

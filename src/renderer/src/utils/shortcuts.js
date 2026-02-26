@@ -9,6 +9,8 @@ const config = {
   'shift+wheelup': 'action:zoomin',
   'shift+wheeldown': 'action:zoomout',
   'ctrl+rightclick': 'action:select',
+  'ctrl+click': 'action:altplus',
+  'ctrl+alt+click': 'action:altminus',
 
   tap: 'action:primary',
   doubletap: 'action:select',
