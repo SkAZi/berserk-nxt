@@ -44,4 +44,4 @@ def create_tilesets(folder_path, suffix=""):
 
 # Путь к папке с картинками
 for folder_path in ['../src/renderer/cards/70']:
-    create_tilesets(folder_path, suffix="a3")
+    create_tilesets(folder_path, suffix="")

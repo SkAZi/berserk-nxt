@@ -44,9 +44,11 @@
   let other_options = option_set['other_options']
 
   const isWeb = window.electron.ipcRenderer.sendSync('get-isweb')
+  const isTesting = window.electron.ipcRenderer.sendSync('get-is-testing')
   let deck_name = `${$draft.variant === 'draft' ? 'Драфт' : 'Силед'} от ${formatCurrentDate()}`
   let lock_click = false
   let chart_total = true
+  let testing_mode = false
 
   let userMethod = null
   let parsedUserMetod = {}
@@ -187,7 +189,7 @@
         }
       } else {
         const boosters = draft.boosters_set.flatMap((set_id) =>
-          set_id !== '' ? getBooster(cardsStore, parseInt(set_id), () => rng.nextNumber()) : []
+          set_id !== '' ? getBooster(cardsStore, parseInt(set_id), () => rng.nextNumber(), testing_mode) : []
         )
         return {
           ...draft,
@@ -251,7 +253,7 @@
         return [boosters, -1, last_boosters]
     } else {
       for (let i = 0; i < draft.players; i++)
-        boosters.push(getBooster(cardsStore, parseInt(draft.boosters_set[draft.current_booster]), () => rng.nextNumber()))
+        boosters.push(getBooster(cardsStore, parseInt(draft.boosters_set[draft.current_booster]), () => rng.nextNumber(), testing_mode))
       last_boosters[draft.current_booster] = JSON.parse(JSON.stringify(boosters))
     }
 
@@ -501,7 +503,7 @@
       if(!$draft.boosters_set[j]) continue;
       let boosters = []
       for (let i = 0; i < $draft.players; i++)
-        boosters.push(getBooster(cardsStore, parseInt($draft.boosters_set[j]), () => rng.nextNumber()))
+        boosters.push(getBooster(cardsStore, parseInt($draft.boosters_set[j]), () => rng.nextNumber(), testing_mode))
       last_boosters.push(JSON.parse(JSON.stringify(boosters)))
     }
 
@@ -540,11 +542,11 @@
 </script>
 
 {#if $draft.step <= 3}
-  <a href="https://t.me/freemen_cup" target="_blank" id="ellion">&nbsp;</a>
+  <!-- a href="https://t.me/freemen_cup" target="_blank" id="ellion">&nbsp;</a>
   <a href="https://t.me/freemen_cup" target="_blank" id="ellion2">&nbsp;</a>
   <a href="https://t.me/freemen_cup" target="_blank" id="ellion-text1">&nbsp;</a>
   <a href="https://t.me/freemen_cup" target="_blank" id="ellion-text">&nbsp;</a>
-  <a href="https://t.me/freemen_cup" target="_blank" id="ellion-text2">&nbsp;</a>
+  <a href="https://t.me/freemen_cup" target="_blank" id="ellion-text2">&nbsp;</a -->
   <section
     class="content draft_form"
     use:shortcuts={{ keyboard: true }}
@@ -639,6 +641,13 @@
             {/each}
           </label>
         </fieldset>
+        {#if isTesting}
+          <div style="margin: -1em 0 1em">
+            <label>
+              <input type="checkbox" bind:checked={testing_mode} /> Тестовый режим (повышенный шанс на ультры)
+            </label>
+          </div>
+        {/if}
         <div class="button-container" style="display: flex; justify-content: space-between; text-align: right">
           {#if $draft.show_score !== '3'}
           <span>

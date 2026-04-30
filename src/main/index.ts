@@ -77,6 +77,7 @@ const stores = {
 
 const settings_obj = stores.settings.get() || {}
 const settings_path: string | undefined = settings_obj.settings_path
+let testing_mode = false
 
 // 2) остальные сторы — уже с cwd из настроек (если задан)
 stores.cards = new SafeStore<any>({
@@ -377,6 +378,10 @@ app.whenReady().then(async () => {
 
   ipcMain.on('get-isweb', (event) => {
     event.returnValue = false
+  })
+
+  ipcMain.on('get-is-testing', (event) => {
+    event.returnValue = testing_mode
   })
 
   ipcMain.handle('confirm-dialog', async (_event, title, message, buttons = ["Отменить", "Да"]) => {
@@ -880,9 +885,11 @@ function enableAddon(): void {
   testingModeItem.label = 'Завершить режим тестирования'
   testingModeItem.click = disableAddon
   Menu.setApplicationMenu(Menu.buildFromTemplate(menuTemplate))
+  testing_mode = true
 }
 
 function disableAddon(): void {
+  testing_mode = false
   app.relaunch()
   app.exit()
 }

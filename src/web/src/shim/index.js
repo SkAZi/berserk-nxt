@@ -318,6 +318,10 @@ window.electron.ipcRenderer.on('get-isweb', () => {
   return true
 })
 
+window.electron.ipcRenderer.on('get-is-testing', () => {
+  return false
+})
+
 window.electron.ipcRenderer.on('get-version', () => {
-  return '7.1.0'
+  return '7.1.5'
 })
